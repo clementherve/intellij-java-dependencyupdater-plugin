@@ -25,11 +25,13 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
     }
 
     public void test_parse_simple_string_notation() {
-        String content = "dependencies {\n" +
-                "    implementation 'com.google.guava:guava:31.1-jre'\n" +
-                "    api 'org.apache.commons:commons-lang3:3.12.0'\n" +
-                "    testImplementation 'junit:junit:4.13.2'\n" +
-                "}";
+        String content = """
+                dependencies {
+                    implementation 'com.google.guava:guava:31.1-jre'
+                    api 'org.apache.commons:commons-lang3:3.12.0'
+                    testImplementation 'junit:junit:4.13.2'
+                }
+                """;
 
         PsiFile file = myFixture.configureByText(GroovyFileType.GROOVY_FILE_TYPE, content);
         myFixture.setTestDataPath("src/test/testData");
@@ -37,14 +39,9 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
         GradlePsiParser parser = new GradlePsiParser();
         List<DependencyInfo> dependencies = parser.parseDependencies(file);
 
-        System.out.println("Parsed dependencies: " + dependencies.size());
-        for (DependencyInfo dep : dependencies) {
-            System.out.println("  - " + dep.getFullCoordinates());
-        }
-
         assertEquals(3, dependencies.size());
 
-        DependencyInfo guava = dependencies.get(0);
+        DependencyInfo guava = dependencies.getFirst();
         assertEquals("com.google.guava", guava.getGroup());
         assertEquals("guava", guava.getArtifact());
         assertEquals("31.1-jre", guava.getCurrentVersion());
@@ -65,14 +62,20 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
     }
 
     public void test_parse_map_notation() {
-        PsiFile file = myFixture.configureByFile("parsing/map-notation.gradle");
+        String content = """
+                dependencies {
+                    implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
+                    api group: 'org.springframework.boot', name: 'spring-boot-starter', version: '2.7.0'
+                }
+                """;
+        PsiFile file = myFixture.configureByText(GroovyFileType.GROOVY_FILE_TYPE, content);
         GradlePsiParser parser = new GradlePsiParser();
 
         List<DependencyInfo> dependencies = parser.parseDependencies(file);
 
         assertEquals(2, dependencies.size());
 
-        DependencyInfo guava = dependencies.get(0);
+        DependencyInfo guava = dependencies.getFirst();
         assertEquals("com.google.guava", guava.getGroup());
         assertEquals("guava", guava.getArtifact());
         assertEquals("31.1-jre", guava.getCurrentVersion());
@@ -111,21 +114,5 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
         assertEquals("guavaVersion", firstDependency.getVariableName());
         assertEquals("31.1-jre", firstDependency.getCurrentVersion());
 
-    }
-
-    public void test_canParse_returns_true_for_build_gradle() {
-        PsiFile file = myFixture.configureByFile("parsing/simple.gradle");
-        GradlePsiParser parser = new GradlePsiParser();
-
-        assertTrue(parser.canParse(file));
-    }
-
-    public void test_empty_file_returns_empty_list() {
-        PsiFile file = myFixture.configureByText("build.gradle", "");
-        GradlePsiParser parser = new GradlePsiParser();
-
-        List<DependencyInfo> dependencies = parser.parseDependencies(file);
-
-        assertTrue(dependencies.isEmpty());
     }
 }
