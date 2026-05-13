@@ -135,6 +135,15 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
         state.triggerMode = triggerMode;
     }
 
+    @NotNull
+    public String getVersionFilterRegex() {
+        return state.versionFilterRegex != null ? state.versionFilterRegex : "";
+    }
+
+    public void setVersionFilterRegex(@NotNull String versionFilterRegex) {
+        state.versionFilterRegex = versionFilterRegex;
+    }
+
     public enum TriggerMode {
         ON_OPEN("On project open"),
         ON_SAVE("On file save"),
@@ -163,6 +172,7 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
         public boolean showGutterIcons = true;
         public boolean showInlayHints = true;
         public TriggerMode triggerMode = TriggerMode.ON_OPEN;
+        public String versionFilterRegex = "";
 
         // Default constructor for XML serialization
         public State() {

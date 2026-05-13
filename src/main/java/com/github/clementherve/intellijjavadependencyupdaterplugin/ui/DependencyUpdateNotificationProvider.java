@@ -1,16 +1,25 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.ui;
 
 import com.github.clementherve.intellijjavadependencyupdaterplugin.actions.UpdateAllDependenciesAction;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.model.DependencyInfo;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionCandidate;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParser;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParserFactory;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.fileEditor.FileEditor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiManager;
 import com.intellij.ui.EditorNotificationPanel;
 import com.intellij.ui.EditorNotificationProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -25,15 +34,53 @@ public class DependencyUpdateNotificationProvider implements EditorNotificationP
             return null;
         }
 
-        return fileEditor -> {
-            EditorNotificationPanel panel = new EditorNotificationPanel(fileEditor, EditorNotificationPanel.Status.Info);
-            panel.setText("Gradle dependencies");
+        // Check if there are any outdated dependencies in this file
+        Integer outdatedCount = ReadAction.compute(() -> {
+            PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
+            if (psiFile == null) {
+                return 0;
+            }
 
-            // Add "Update All Dependencies" button
-            panel.createActionLabel("Update all dependencies", () -> {
+            DependencyParser parser = DependencyParserFactory.getParser(psiFile);
+            if (parser == null) {
+                return 0;
+            }
+
+            List<DependencyInfo> dependencies = parser.parseDependencies(psiFile);
+            if (dependencies.isEmpty()) {
+                return 0;
+            }
+
+            DependencyUpdateService service = DependencyUpdateService.getInstance(project);
+            int count = 0;
+            for (DependencyInfo dependency : dependencies) {
+                // Use cache-only check to avoid blocking
+                VersionCandidate latest = service.checkForUpdateFromCache(dependency);
+                if (latest != null) {
+                    count++;
+                }
+            }
+            return count;
+        });
+
+        // Only show banner if there are updates available
+        if (outdatedCount == null || outdatedCount == 0) {
+            return null;
+        }
+
+        final int finalCount = outdatedCount;
+        return fileEditor -> {
+            EditorNotificationPanel panel = new EditorNotificationPanel(fileEditor, EditorNotificationPanel.Status.Warning);
+
+            String message = finalCount == 1
+                ? "1 dependency update available"
+                : finalCount + " dependency updates available";
+            panel.setText(message);
+
+            // Add "Update All" button
+            panel.createActionLabel("Update all", () -> {
                 UpdateAllDependenciesAction action = new UpdateAllDependenciesAction();
                 action.actionPerformed(
-                        // fixme: AnActionEvent is deprecated and marked for removal
                         new com.intellij.openapi.actionSystem.AnActionEvent(
                                 null,
                                 dataId -> {

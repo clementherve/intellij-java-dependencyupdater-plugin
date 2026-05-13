@@ -57,7 +57,40 @@ public class VersionPolicyEvaluator {
                                                @NotNull String currentVersion,
                                                @NotNull VersionPolicy policy,
                                                @NotNull String repositorySource) {
-        List<VersionCandidate> candidates = evaluate(versions, policy, repositorySource);
+        return findBestCandidate(versions, currentVersion, policy, repositorySource, null);
+    }
+
+    /**
+     * Finds the best (highest) version candidate that passes the policy and is greater than the current version.
+     * Optionally filters versions using a regex pattern.
+     *
+     * @param versions the list of available version strings
+     * @param currentVersion the current version string
+     * @param policy the version policy to apply
+     * @param repositorySource the source repository name
+     * @param excludeRegex optional regex pattern to exclude versions (e.g., ".*-SNAPSHOT")
+     * @return the best version candidate, or null if no upgrade is available
+     */
+    @Nullable
+    public VersionCandidate findBestCandidate(@NotNull List<String> versions,
+                                               @NotNull String currentVersion,
+                                               @NotNull VersionPolicy policy,
+                                               @NotNull String repositorySource,
+                                               @Nullable String excludeRegex) {
+        // Apply regex filter if provided
+        List<String> filteredVersions = versions;
+        if (excludeRegex != null && !excludeRegex.isEmpty()) {
+            try {
+                Pattern excludePattern = Pattern.compile(excludeRegex);
+                filteredVersions = versions.stream()
+                        .filter(v -> !excludePattern.matcher(v).matches())
+                        .toList();
+            } catch (PatternSyntaxException e) {
+                // Invalid regex, proceed without filtering
+            }
+        }
+
+        List<VersionCandidate> candidates = evaluate(filteredVersions, policy, repositorySource);
 
         SemanticVersion current = SemanticVersion.parse(currentVersion);
         if (current == null) {

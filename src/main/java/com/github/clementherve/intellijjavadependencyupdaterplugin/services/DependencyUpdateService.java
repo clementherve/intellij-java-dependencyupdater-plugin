@@ -61,12 +61,16 @@ public final class DependencyUpdateService {
                 return null;
             }
 
+            DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
             VersionPolicy policy = getFirstPolicy();
+            String excludeRegex = settings.getVersionFilterRegex();
+
             return policyEvaluator.findBestCandidate(
                     versions,
                     dependency.currentVersion(),
                     policy,
-                    getRepositorySource()
+                    getRepositorySource(),
+                    excludeRegex
             );
         } catch (Exception e) {
             LOGGER.warn("Failed to check for update: " + dependency.getFullCoordinates(), e);
@@ -97,11 +101,14 @@ public final class DependencyUpdateService {
         }
 
         VersionPolicy policy = getFirstPolicy();
+        String excludeRegex = settings.getVersionFilterRegex();
+
         return policyEvaluator.findBestCandidate(
                 cachedVersions,
                 dependency.currentVersion(),
                 policy,
-                getRepositorySource()
+                getRepositorySource(),
+                excludeRegex
         );
     }
 

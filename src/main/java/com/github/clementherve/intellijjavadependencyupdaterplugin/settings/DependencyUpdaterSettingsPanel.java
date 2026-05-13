@@ -31,6 +31,7 @@ public class DependencyUpdaterSettingsPanel {
     private final JBCheckBox showGutterIconsCheckBox;
     private final JBCheckBox showInlayHintsCheckBox;
     private final ComboBox<DependencyUpdaterSettings.TriggerMode> triggerModeComboBox;
+    private final JBTextField versionFilterRegexField;
     private String cachedPassword = "";
 
     public DependencyUpdaterSettingsPanel(@NotNull Project project) {
@@ -46,6 +47,8 @@ public class DependencyUpdaterSettingsPanel {
 
         showGutterIconsCheckBox = new JBCheckBox("Show gutter icons for outdated dependencies");
         showInlayHintsCheckBox = new JBCheckBox("Show inlay hints with available versions");
+
+        versionFilterRegexField = new JBTextField();
 
         triggerModeComboBox = new ComboBox<>(DependencyUpdaterSettings.TriggerMode.values());
         triggerModeComboBox.setRenderer(new DefaultListCellRenderer() {
@@ -70,11 +73,13 @@ public class DependencyUpdaterSettingsPanel {
                 .addLabeledComponent(new JBLabel("Cache TTL (minutes):"), cacheTtlSpinner, 1, false)
                 .addComponentToRightColumn(new JBLabel("How long to cache version information"), 0)
                 .addSeparator(5)
-                .addComponent(showGutterIconsCheckBox, 1)
                 .addComponent(showInlayHintsCheckBox, 1)
                 .addSeparator(5)
                 .addLabeledComponent(new JBLabel("Trigger mode:"), triggerModeComboBox, 1, false)
                 .addComponentToRightColumn(new JBLabel("When to check for dependency updates"), 0)
+                .addSeparator(5)
+                .addLabeledComponent(new JBLabel("Version filter regex:"), versionFilterRegexField, 1, false)
+                .addComponentToRightColumn(new JBLabel("Exclude versions matching this regex (e.g., \".*-SNAPSHOT\" or \".*-(alpha|beta).*\")"), 0)
                 .addSeparator(10)
                 .addComponentFillVertically(new JPanel(), 0)
                 .getPanel();
@@ -106,6 +111,8 @@ public class DependencyUpdaterSettingsPanel {
                 (DependencyUpdaterSettings.TriggerMode) triggerModeComboBox.getSelectedItem();
         if (selectedMode != null && selectedMode != settings.getTriggerMode()) return true;
 
+        if (!versionFilterRegexField.getText().equals(settings.getVersionFilterRegex())) return true;
+
         return false;
     }
 
@@ -131,6 +138,8 @@ public class DependencyUpdaterSettingsPanel {
         if (selectedMode != null) {
             settings.setTriggerMode(selectedMode);
         }
+
+        settings.setVersionFilterRegex(versionFilterRegexField.getText());
     }
 
     public void reset() {
@@ -149,5 +158,6 @@ public class DependencyUpdaterSettingsPanel {
         showGutterIconsCheckBox.setSelected(settings.isShowGutterIcons());
         showInlayHintsCheckBox.setSelected(settings.isShowInlayHints());
         triggerModeComboBox.setSelectedItem(settings.getTriggerMode());
+        versionFilterRegexField.setText(settings.getVersionFilterRegex());
     }
 }
