@@ -51,14 +51,8 @@ public class VersionReplacer {
         // Perform the replacement in a write action
         WriteCommandAction.runWriteCommandAction(project, "Update Dependency Version", null, () -> {
             String oldText = versionElement.getText();
+            // Replace just the version part, preserving group:artifact and quotes
             String newText = oldText.replace(dependency.getCurrentVersion(), newVersion);
-
-            // For string literals, we need to preserve quotes
-            if (oldText.contains("\"")) {
-                newText = "\"" + newVersion + "\"";
-            } else if (oldText.contains("'")) {
-                newText = "'" + newVersion + "'";
-            }
 
             try {
                 // For now, use a simple text-based approach

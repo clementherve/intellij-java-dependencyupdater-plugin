@@ -9,9 +9,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.settings.Depe
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
 import com.intellij.lang.annotation.HighlightSeverity;
-import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
@@ -50,41 +48,23 @@ public class DependencyAnnotator implements Annotator {
             return;
         }
 
-        // Only process leaf elements that are configuration names
-        if (element.getFirstChild() != null) {
-            return;
-        }
-
+        // Check if this element looks like a dependency string
         String text = element.getText();
-        if (text == null || !isConfigurationName(text)) {
+        if (text == null || !text.contains(":")) {
             return;
         }
 
         DependencyParser parser = DependencyParserFactory.getParser(file);
         if (parser == null) {
-            LOGGER.debug("Skipping dependency annotator because parser is null");
             return;
         }
 
         List<DependencyInfo> dependencies = parser.parseDependencies(file);
+
         DependencyUpdateService service = DependencyUpdateService.getInstance(project);
 
-        // Get the document to check line numbers
-        Document document = PsiDocumentManager.getInstance(project).getDocument(file);
-        if (document == null) {
-            LOGGER.debug("Document is null");
-            return;
-        }
-
-        // Get the line number of the configuration name element
-        int elementLine = document.getLineNumber(element.getTextOffset());
-
+        // Check if this element is one of the parsed dependency version strings
         for (DependencyInfo dependency : dependencies) {
-            // Must match the configuration name
-            if (!text.equals(dependency.getConfigurationName())) {
-                continue;
-            }
-
             if (dependency.getPsiElementPointer() == null) {
                 continue;
             }
@@ -94,17 +74,15 @@ public class DependencyAnnotator implements Annotator {
                 continue;
             }
 
-            // Check if they're on the same line
-            int depLine = document.getLineNumber(depElement.getTextOffset());
-
-            if (elementLine == depLine) {
-                LOGGER.debug("Found matching dependency on line {}: {}", elementLine, dependency.getArtifact());
+            // Check if this is the exact element we're looking for (by reference only)
+            if (depElement == element) {
+                LOGGER.debug("Found matching dependency element: {}", dependency.getArtifact());
 
                 // Check cache for update (never block on network)
                 VersionCandidate candidate = service.checkForUpdateFromCache(dependency);
 
                 if (candidate != null) {
-                    // Add inline annotation on the configuration name
+                    // Add inline annotation on the version string itself
                     String message = dependency.getArtifact() + " → " + candidate.getVersion() + " available";
                     LOGGER.debug("Annotating with message: {}", message);
 
@@ -122,20 +100,5 @@ public class DependencyAnnotator implements Annotator {
                 break;
             }
         }
-    }
-
-    /**
-     * TODO: extract in a util
-     */
-    private boolean isConfigurationName(@NotNull String text) {
-        return text.equals("implementation") ||
-                text.equals("api") ||
-                text.equals("compileOnly") ||
-                text.equals("runtimeOnly") ||
-                text.equals("testImplementation") ||
-                text.equals("testCompileOnly") ||
-                text.equals("testRuntimeOnly") ||
-                text.equals("annotationProcessor") ||
-                text.equals("kapt");
     }
 }
