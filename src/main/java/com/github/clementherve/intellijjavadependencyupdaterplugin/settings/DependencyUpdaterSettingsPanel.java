@@ -31,6 +31,7 @@ public class DependencyUpdaterSettingsPanel {
     private final JBCheckBox showGutterIconsCheckBox;
     private final JBCheckBox showInlayHintsCheckBox;
     private final ComboBox<DependencyUpdaterSettings.TriggerMode> triggerModeComboBox;
+    private String cachedPassword = "";
 
     public DependencyUpdaterSettingsPanel(@NotNull Project project) {
         this.myProject = project;
@@ -92,9 +93,9 @@ public class DependencyUpdaterSettingsPanel {
         if (!nexusBaseUrlField.getText().equals(settings.getNexusBaseUrl())) return true;
         if (!nexusUsernameField.getText().equals(settings.getNexusUsername())) return true;
 
-        String currentPassword = settings.getNexusPassword();
+        // Use cached password to avoid slow operation on EDT
         String newPassword = new String(nexusPasswordField.getPassword());
-        if (!newPassword.equals(currentPassword == null ? "" : currentPassword)) return true;
+        if (!newPassword.equals(cachedPassword)) return true;
 
         if (fallbackToMavenCentralCheckBox.isSelected() != settings.isFallbackToMavenCentral()) return true;
         if (!cacheTtlSpinner.getValue().equals(settings.getCacheTtlMinutes())) return true;
@@ -117,6 +118,7 @@ public class DependencyUpdaterSettingsPanel {
         String password = new String(nexusPasswordField.getPassword());
         if (!password.isEmpty()) {
             settings.setNexusPassword(password);
+            cachedPassword = password;  // Update cache after saving
         }
 
         settings.setFallbackToMavenCentral(fallbackToMavenCentralCheckBox.isSelected());
@@ -137,8 +139,10 @@ public class DependencyUpdaterSettingsPanel {
         nexusBaseUrlField.setText(settings.getNexusBaseUrl());
         nexusUsernameField.setText(settings.getNexusUsername());
 
+        // Cache password to avoid slow operations on EDT during isModified() checks
         String password = settings.getNexusPassword();
-        nexusPasswordField.setText(password != null ? password : "");
+        cachedPassword = password != null ? password : "";
+        nexusPasswordField.setText(cachedPassword);
 
         fallbackToMavenCentralCheckBox.setSelected(settings.isFallbackToMavenCentral());
         cacheTtlSpinner.setValue(settings.getCacheTtlMinutes());

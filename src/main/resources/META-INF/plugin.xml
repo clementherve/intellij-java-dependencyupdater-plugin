@@ -7,7 +7,7 @@
         <p><b>Gradle Dependency Updater</b> helps you keep your Gradle dependencies up to date.</p>
         <p>Features:</p>
         <ul>
-            <li>Automatic detection of outdated dependencies in build.gradle and build.gradle.kts files</li>
+            <li>Automatic detection of outdated dependencies in build.gradle files</li>
             <li>Visual gutter icons indicating available updates</li>
             <li>Alt+Enter quick-fix intentions to update dependencies</li>
             <li>Configurable version policies (stable only, include/exclude patterns)</li>
@@ -18,10 +18,19 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>org.intellij.groovy</depends>
-    <!-- Make Kotlin plugin optional for K2 compatibility -->
-    <depends optional="true" config-file="kotlin-support.xml">org.jetbrains.kotlin</depends>
 
     <resource-bundle>messages.DependencyUpdaterBundle</resource-bundle>
+
+    <!-- Startup activity for cache warming -->
+    <extensions defaultExtensionNs="com.intellij">
+        <postStartupActivity implementation="com.github.clementherve.intellijjavadependencyupdaterplugin.startup.DependencyStartupActivity"/>
+    </extensions>
+
+    <!-- File change listener for ON_SAVE trigger mode -->
+    <projectListeners>
+        <listener class="com.github.clementherve.intellijjavadependencyupdaterplugin.listeners.BuildFileChangeListener"
+                  topic="com.intellij.openapi.fileEditor.FileDocumentManagerListener"/>
+    </projectListeners>
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Settings -->
@@ -47,6 +56,12 @@
         <!-- Editor notification banner -->
         <editorNotificationProvider
                 implementation="com.github.clementherve.intellijjavadependencyupdaterplugin.ui.DependencyUpdateNotificationProvider"/>
+
+        <!-- Tool window -->
+        <toolWindow id="Dependency Overview"
+                    anchor="bottom"
+                    icon="AllIcons.Toolwindows.ToolWindowBuild"
+                    factoryClass="com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow.DependencyOverviewToolWindowFactory"/>
 
         <!-- Actions -->
         <action id="DependencyUpdater.UpdateAll"

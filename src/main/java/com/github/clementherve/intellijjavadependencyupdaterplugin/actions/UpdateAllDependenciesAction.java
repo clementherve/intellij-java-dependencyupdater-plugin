@@ -5,6 +5,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.model.Version
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParser;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParserFactory;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.VersionReplacer;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -37,11 +38,10 @@ public class UpdateAllDependenciesAction extends AnAction {
             return;
         }
 
-        String fileName = file.getName();
-        if (!"build.gradle".equals(fileName) && !"build.gradle.kts".equals(fileName)) {
+        if (!SupportedFilesUtil.isSupportedFile(file.getName())) {
             Messages.showInfoMessage(
                     project,
-                    "This action only works on build.gradle or build.gradle.kts files.",
+                    "This action only works on build.gradle files.",
                     "Update All Dependencies"
             );
             return;
@@ -156,8 +156,7 @@ public class UpdateAllDependenciesAction extends AnAction {
     @Override
     public void update(@NotNull AnActionEvent e) {
         PsiFile file = e.getData(CommonDataKeys.PSI_FILE);
-        boolean enabled = file != null &&
-                ("build.gradle".equals(file.getName()) || "build.gradle.kts".equals(file.getName()));
+        boolean enabled = file != null && SupportedFilesUtil.isSupportedFile(file.getName());
         e.getPresentation().setEnabledAndVisible(enabled);
     }
 }

@@ -6,6 +6,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.Dependenc
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParserFactory;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.settings.DependencyUpdaterSettings;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
 import com.intellij.lang.annotation.HighlightSeverity;
@@ -33,10 +34,8 @@ public class DependencyAnnotator implements Annotator {
             return;
         }
 
-        String fileName = file.getName();
-        final boolean isNotBuildGradleFile = !"build.gradle".equals(fileName) && !"build.gradle.kts".equals(fileName);
-        if (isNotBuildGradleFile) {
-            LOGGER.debug("Skipping dependency annotator because file is not build.gradle or build.gradle.kts");
+        if (!SupportedFilesUtil.isSupportedFile(file.getName())) {
+            LOGGER.debug("Skipping dependency annotator because file is not build.gradle");
             return;
         }
 

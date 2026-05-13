@@ -1,6 +1,7 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.psi;
 
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.DependencyInfo;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -43,7 +44,7 @@ public class GradlePsiParser implements DependencyParser {
 
     @Override
     public boolean canParse(@NotNull PsiFile psiFile) {
-        return "build.gradle".equals(psiFile.getName());
+        return SupportedFilesUtil.isSupportedFile(psiFile.getName());
     }
 
     @NotNull

@@ -6,6 +6,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.Dependenc
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParserFactory;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SemanticVersion;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.VersionReplacer;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.VersionUpdateType;
 import com.intellij.codeInsight.intention.IntentionAction;
@@ -58,8 +59,7 @@ public class UpdateDependencyToMajorIntention extends PsiElementBaseIntentionAct
             return false;
         }
 
-        String fileName = file.getName();
-        if (!"build.gradle".equals(fileName) && !"build.gradle.kts".equals(fileName)) {
+        if (!SupportedFilesUtil.isSupportedFile(file.getName())) {
             return false;
         }
 

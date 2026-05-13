@@ -1,4 +1,0 @@
-dependencies {
-    implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
-    api group: 'org.springframework.boot', name: 'spring-boot-starter', version: '2.7.0'
-}

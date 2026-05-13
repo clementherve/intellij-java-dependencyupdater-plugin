@@ -5,6 +5,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.model.Version
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParser;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParserFactory;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.VersionReplacer;
 import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
@@ -64,8 +65,7 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
             return false;
         }
 
-        String fileName = file.getName();
-        if (!"build.gradle".equals(fileName)) {
+        if (!SupportedFilesUtil.isSupportedFile(file.getName())) {
             return false;
         }
 

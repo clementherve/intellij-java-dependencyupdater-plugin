@@ -20,7 +20,7 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
 
     @Override
     protected String getTestDataPath() {
-        return "src/test/testData";
+        return "src/test/unused";
     }
 
     public void test_parse_simple_string_notation() {
