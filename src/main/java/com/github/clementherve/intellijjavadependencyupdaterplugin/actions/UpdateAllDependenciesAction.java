@@ -9,6 +9,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.util.VersionR
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -54,14 +55,20 @@ public class UpdateAllDependenciesAction extends AnAction {
             public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setText("Parsing dependencies...");
 
-                DependencyParser parser = DependencyParserFactory.getParser(file);
-                if (parser == null) {
+                // Parse dependencies in a read action
+                List<DependencyInfo> dependencies = ReadAction.compute(() -> {
+                    DependencyParser parser = DependencyParserFactory.getParser(file);
+                    if (parser == null) {
+                        return new ArrayList<>();
+                    }
+                    return parser.parseDependencies(file);
+                });
+
+                if (dependencies.isEmpty()) {
                     return;
                 }
 
-                List<DependencyInfo> dependencies = parser.parseDependencies(file);
                 DependencyUpdateService service = DependencyUpdateService.getInstance(project);
-
                 indicator.setText("Checking for updates...");
 
                 for (int i = 0; i < dependencies.size(); i++) {
