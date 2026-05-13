@@ -47,9 +47,9 @@ public class DependencyAnnotator implements Annotator {
             return;
         }
 
-        // Check if this element looks like a dependency string
+        // Check if this element looks like a version string (either dependency or plugin)
         String text = element.getText();
-        if (text == null || !text.contains(":")) {
+        if (text == null) {
             return;
         }
 
@@ -68,19 +68,15 @@ public class DependencyAnnotator implements Annotator {
                 continue;
             }
 
-            PsiElement depElement = dependency.psiElementPointer().getElement();
-            if (depElement == null) {
+            PsiElement dependencyElement = dependency.psiElementPointer().getElement();
+            if (dependencyElement == null) {
                 continue;
             }
 
-            // Check if this is the exact element we're looking for (by reference only)
-            if (depElement == element) {
-                LOGGER.debug("Found matching dependency element: {}", dependency.artifact());
-
-                VersionCandidate candidate = service.checkForUpdateFromCache(dependency);
+            if (dependencyElement == element) {
+                VersionCandidate candidate = service.getFromCache(dependency);
 
                 if (candidate != null) {
-                    // Add inline annotation on the version string itself
                     String message = dependency.artifact() + " → " + candidate.version() + " available";
                     LOGGER.debug("Annotating with message: {}", message);
 
@@ -89,12 +85,9 @@ public class DependencyAnnotator implements Annotator {
                             .tooltip(message)
                             .create();
                 } else {
-                    LOGGER.debug("No cached update for: {}", dependency.artifact());
-                    // Schedule background fetch for next time
                     service.scheduleCacheWarmup(dependency);
                 }
 
-                // Found the matching dependency, no need to continue
                 break;
             }
         }

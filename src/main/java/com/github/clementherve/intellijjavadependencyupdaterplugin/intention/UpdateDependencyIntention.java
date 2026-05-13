@@ -56,7 +56,7 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
         // Get the best version candidate (use cached if available)
         DependencyUpdateService service = DependencyUpdateService.getInstance(project);
         VersionCandidate candidate = cachedCandidate != null ? cachedCandidate
-                : service.checkForUpdateFromCache(dependency);
+                : service.getFromCache(dependency);
 
         if (candidate == null) {
             // Fetch in background - this will warm the cache
@@ -93,7 +93,7 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
         }
 
         DependencyUpdateService service = DependencyUpdateService.getInstance(project);
-        VersionCandidate candidate = service.checkForUpdateFromCache(dependency);
+        VersionCandidate candidate = service.getFromCache(dependency);
 
         // Cache for getText() method
         cachedDependency = dependency;

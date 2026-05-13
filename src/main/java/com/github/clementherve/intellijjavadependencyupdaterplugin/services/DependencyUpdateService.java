@@ -5,6 +5,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.model.Depende
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionPolicy;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.policy.VersionPolicyEvaluator;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.GradlePluginPortalClient;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.MavenCentralClient;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.NexusClient;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.VersionRepository;
@@ -34,12 +35,14 @@ public final class DependencyUpdateService {
     private final VersionCache cache;
     private final VersionPolicyEvaluator policyEvaluator;
     private final MavenCentralClient mavenCentralClient;
+    private final GradlePluginPortalClient pluginPortalClient;
 
     public DependencyUpdateService(@NotNull Project project) {
         this.project = project;
         this.cache = VersionCache.getInstance(project);
         this.policyEvaluator = new VersionPolicyEvaluator();
         this.mavenCentralClient = new MavenCentralClient();
+        this.pluginPortalClient = new GradlePluginPortalClient();
     }
 
     public static DependencyUpdateService getInstance(@NotNull Project project) {
@@ -69,7 +72,7 @@ public final class DependencyUpdateService {
                     versions,
                     dependency.currentVersion(),
                     policy,
-                    getRepositorySource(),
+                    getRepositorySource(dependency.group()),
                     excludeRegex
             );
         } catch (Exception e) {
@@ -86,7 +89,7 @@ public final class DependencyUpdateService {
      * @return the best version candidate from cache, or null if not cached
      */
     @Nullable
-    public VersionCandidate checkForUpdateFromCache(@NotNull DependencyInfo dependency) {
+    public VersionCandidate getFromCache(@NotNull DependencyInfo dependency) {
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
 
         List<String> cachedVersions = cache.getVersions(
@@ -107,7 +110,7 @@ public final class DependencyUpdateService {
                 cachedVersions,
                 dependency.currentVersion(),
                 policy,
-                getRepositorySource(),
+                getRepositorySource(dependency.group()),
                 excludeRegex
         );
     }
@@ -134,7 +137,7 @@ public final class DependencyUpdateService {
         }
 
         VersionPolicy policy = getFirstPolicy();
-        return policyEvaluator.evaluate(cachedVersions, policy, getRepositorySource());
+        return policyEvaluator.evaluate(cachedVersions, policy, getRepositorySource(dependency.group()));
     }
 
     /**
@@ -144,8 +147,6 @@ public final class DependencyUpdateService {
      * @param dependency the dependency to fetch versions for
      */
     public void scheduleCacheWarmup(@NotNull DependencyInfo dependency) {
-        LOGGER.debug("Scheduling cache warmup for dependency: " + dependency.getFullCoordinates());
-
         ProgressManager.getInstance().run(new Task.Backgroundable(project, "Fetching versions for " + dependency.artifact(), false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -171,17 +172,13 @@ public final class DependencyUpdateService {
     public List<String> getVersions(@NotNull String group, @NotNull String artifact) throws IOException {
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
 
-        // Check cache first
         List<String> cachedVersions = cache.getVersions(group, artifact, settings.getCacheTtlMinutes());
         if (cachedVersions != null) {
-            LOGGER.debug("Using cached versions for " + group + ":" + artifact);
             return cachedVersions;
         }
 
-        // Fetch from repositories
         List<String> versions = fetchVersionsFromRepositories(group, artifact);
 
-        // Cache the result
         if (!versions.isEmpty()) {
             cache.putVersions(group, artifact, versions);
         }
@@ -190,10 +187,18 @@ public final class DependencyUpdateService {
     }
 
     /**
-     * Fetches versions from configured repositories (Nexus first, then Maven Central if fallback is enabled).
+     * Fetches versions from configured repositories.
+     * For plugins (empty group), uses Gradle Plugin Portal.
+     * For regular dependencies, uses Nexus first, then Maven Central if fallback is enabled.
      */
     @NotNull
     private List<String> fetchVersionsFromRepositories(@NotNull String group, @NotNull String artifact) throws IOException {
+        // Handle Gradle plugins (empty group) - use Plugin Portal
+        if (group.isEmpty()) {
+            return pluginPortalClient.fetchVersions(group, artifact);
+        }
+
+        // Handle regular dependencies
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
 
         // Try Nexus first if configured
@@ -244,9 +249,17 @@ public final class DependencyUpdateService {
 
     /**
      * Gets the repository source name for display purposes.
+     *
+     * @param group the dependency group (empty for plugins)
      */
     @NotNull
-    private String getRepositorySource() {
+    private String getRepositorySource(@NotNull String group) {
+        // Plugins (empty group) use Gradle Plugin Portal
+        if (group.isEmpty()) {
+            return "Gradle Plugin Portal";
+        }
+
+        // Regular dependencies use Nexus or Maven Central
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
         if (!settings.getNexusBaseUrl().isEmpty()) {
             return "Nexus";

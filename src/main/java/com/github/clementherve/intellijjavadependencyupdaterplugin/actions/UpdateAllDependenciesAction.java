@@ -65,7 +65,7 @@ public class UpdateAllDependenciesAction extends AnAction {
                     return;
                 }
 
-                DependencyUpdateService service = DependencyUpdateService.getInstance(project);
+                DependencyUpdateService dependencyUpdateService = DependencyUpdateService.getInstance(project);
                 indicator.setText("Checking for updates...");
 
                 for (int i = 0; i < dependencies.size(); i++) {
@@ -77,9 +77,9 @@ public class UpdateAllDependenciesAction extends AnAction {
                     indicator.setFraction((double) i / dependencies.size());
                     indicator.setText2("Checking " + dependency.artifact() + "...");
 
-                    VersionCandidate candidate = service.checkForUpdateFromCache(dependency);
+                    VersionCandidate candidate = dependencyUpdateService.getFromCache(dependency);
                     if (candidate == null) {
-                        candidate = service.checkForUpdate(dependency);
+                        candidate = dependencyUpdateService.checkForUpdate(dependency);
                     }
 
                     if (candidate != null) {
@@ -113,7 +113,6 @@ public class UpdateAllDependenciesAction extends AnAction {
                     // Sort updates in reverse order (bottom to top) to avoid position invalidation
                     List<Map.Entry<DependencyInfo, VersionCandidate>> sortedUpdates = updates.entrySet().stream()
                             .sorted((e1, e2) -> {
-                                // Sort by text offset in descending order (bottom to top)
                                 int offset1 = e1.getKey().psiElementPointer() != null &&
                                              e1.getKey().psiElementPointer().getElement() != null
                                         ? e1.getKey().psiElementPointer().getElement().getTextOffset()
@@ -122,9 +121,9 @@ public class UpdateAllDependenciesAction extends AnAction {
                                              e2.getKey().psiElementPointer().getElement() != null
                                         ? e2.getKey().psiElementPointer().getElement().getTextOffset()
                                         : 0;
-                                return Integer.compare(offset2, offset1); // Descending order
+                                return Integer.compare(offset2, offset1);
                             })
-                            .collect(Collectors.toList());
+                            .toList();
 
                     // Apply all updates in a single write action
                     WriteCommandAction.runWriteCommandAction(project, "Update All Dependencies", null, () -> {

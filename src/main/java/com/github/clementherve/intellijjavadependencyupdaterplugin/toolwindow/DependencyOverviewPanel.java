@@ -44,7 +44,7 @@ import java.util.List;
  */
 public class DependencyOverviewPanel extends JPanel {
 
-    private static final Logger LOG = Logger.getInstance(DependencyOverviewPanel.class);
+    private static final Logger LOGGER = Logger.getInstance(DependencyOverviewPanel.class);
     private static final String CARD_LOADING = "loading";
     private static final String CARD_TABLE = "table";
 
@@ -152,9 +152,10 @@ public class DependencyOverviewPanel extends JPanel {
                 indicator.setText("Finding build.gradle files...");
 
                 // Find all build.gradle files by traversing the project directory
+                // todo: extract in a service and share with DependencyStartupActivity
                 List<VirtualFile> buildFiles = ReadAction.compute(() -> {
                     List<VirtualFile> files = new ArrayList<>();
-                    VirtualFile baseDir = project.getBaseDir();
+                    VirtualFile baseDir = project.getBaseDir(); // fixme: getBaseDir is deprecated
 
                     if (baseDir != null) {
                         VfsUtilCore.visitChildrenRecursively(baseDir, new VirtualFileVisitor<Void>() {
@@ -163,14 +164,10 @@ public class DependencyOverviewPanel extends JPanel {
                                 // Skip common directories
                                 if (file.isDirectory()) {
                                     String name = file.getName();
-                                    if (name.startsWith(".") || name.equals("build") ||
-                                        name.equals("node_modules") || name.equals("target")) {
-                                        return false;
-                                    }
-                                    return true;
+                                    return !name.startsWith(".") && !name.equals("build") &&
+                                            !name.equals("node_modules") && !name.equals("target");
                                 }
 
-                                // Check if it's a build.gradle file
                                 if (SupportedFilesUtil.isSupportedFile(file.getName())) {
                                     files.add(file);
                                 }
@@ -182,12 +179,10 @@ public class DependencyOverviewPanel extends JPanel {
                 });
 
                 if (buildFiles.isEmpty()) {
-                    LOG.info("No build.gradle files found in project");
                     SwingUtilities.invokeLater(() -> loadingLabel.setText("No build.gradle files found"));
                     return;
                 }
 
-                LOG.info("Found " + buildFiles.size() + " build.gradle files");
                 SwingUtilities.invokeLater(() -> loadingLabel.setText("Found " + buildFiles.size() + " build file(s), scanning dependencies..."));
 
                 DependencyUpdateService service = DependencyUpdateService.getInstance(project);
@@ -220,8 +215,6 @@ public class DependencyOverviewPanel extends JPanel {
                             return parser.parseDependencies(psiFile);
                         });
 
-                        LOG.info("Found " + dependencies.size() + " dependencies in " + file.getName());
-
                         // Check for updates
                         for (DependencyInfo dependency : dependencies) {
                             if (indicator.isCanceled()) {
@@ -237,14 +230,13 @@ public class DependencyOverviewPanel extends JPanel {
                         }
 
                     } catch (Exception e) {
-                        LOG.warn("Failed to process " + file.getName(), e);
+                        LOGGER.warn("Failed to process " + file.getName(), e);
                     }
                 }
             }
 
             @Override
             public void onSuccess() {
-                LOG.info("Scan completed. Found " + results.size() + " dependencies total");
                 SwingUtilities.invokeLater(() -> {
                     tableModel.clear();
                     for (DependencyWithVersion result : results) {
@@ -254,18 +246,15 @@ public class DependencyOverviewPanel extends JPanel {
                     showTable();
 
                     if (results.isEmpty()) {
-                        LOG.info("No dependencies to display");
                         loadingLabel.setText("No dependencies found");
                         showLoading();
-                    } else {
-                        LOG.info("Displaying " + results.size() + " dependencies in table");
                     }
                 });
             }
 
             @Override
             public void onThrowable(@NotNull Throwable error) {
-                LOG.error("Failed to scan dependencies", error);
+                LOGGER.error("Failed to scan dependencies", error);
                 SwingUtilities.invokeLater(() -> {
                     loadingLabel.setText("Error: " + error.getMessage());
                     showLoading();
@@ -373,18 +362,16 @@ public class DependencyOverviewPanel extends JPanel {
                                          r2.dependency().psiElementPointer().getElement() != null
                                     ? r2.dependency().psiElementPointer().getElement().getTextOffset()
                                     : 0;
-                            return Integer.compare(offset2, offset1); // Descending order
+                            return Integer.compare(offset2, offset1);
                         })
                         .toList();
 
-                // Apply all updates in a single write action
                 WriteCommandAction.runWriteCommandAction(project, "Update Dependencies", null, () -> {
                     for (DependencyTableModel.DependencyRow row : sortedRows) {
                         VersionReplacer.applyUpdateInWriteAction(project, row.dependency(), row.latestVersion().version());
                     }
                 });
 
-                // Commit document changes to PSI before refreshing
                 PsiDocumentManager.getInstance(project).commitAllDocuments();
                 refreshDependencies();
             }
@@ -431,7 +418,7 @@ public class DependencyOverviewPanel extends JPanel {
                                      r2.dependency().psiElementPointer().getElement() != null
                                 ? r2.dependency().psiElementPointer().getElement().getTextOffset()
                                 : 0;
-                        return Integer.compare(offset2, offset1); // Descending order
+                        return Integer.compare(offset2, offset1);
                     })
                     .toList();
 
