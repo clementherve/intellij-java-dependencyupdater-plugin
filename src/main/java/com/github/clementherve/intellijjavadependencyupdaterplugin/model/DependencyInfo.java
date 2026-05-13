@@ -10,22 +10,16 @@ import java.util.Objects;
 /**
  * Represents a dependency declaration found in a Gradle build file.
  */
-public class DependencyInfo {
-    private final String group;
-    private final String artifact;
-    private final String currentVersion;
-    private final String configurationName;
-    private final SmartPsiElementPointer<PsiElement> psiElementPointer;
-    private final boolean isVersionVariable;
-    private final String variableName;
-
+public record DependencyInfo(String group, String artifact, String currentVersion, String configurationName,
+                             SmartPsiElementPointer<PsiElement> psiElementPointer, boolean isVersionVariable,
+                             String variableName) {
     public DependencyInfo(@NotNull String group,
-                         @NotNull String artifact,
-                         @NotNull String currentVersion,
-                         @NotNull String configurationName,
-                         @Nullable SmartPsiElementPointer<PsiElement> psiElementPointer,
-                         boolean isVersionVariable,
-                         @Nullable String variableName) {
+                          @NotNull String artifact,
+                          @NotNull String currentVersion,
+                          @NotNull String configurationName,
+                          @Nullable SmartPsiElementPointer<PsiElement> psiElementPointer,
+                          boolean isVersionVariable,
+                          @Nullable String variableName) {
         this.group = group;
         this.artifact = artifact;
         this.currentVersion = currentVersion;
@@ -35,37 +29,39 @@ public class DependencyInfo {
         this.variableName = variableName;
     }
 
+    @Override
     @NotNull
-    public String getGroup() {
+    public String group() {
         return group;
     }
 
+    @Override
     @NotNull
-    public String getArtifact() {
+    public String artifact() {
         return artifact;
     }
 
+    @Override
     @NotNull
-    public String getCurrentVersion() {
+    public String currentVersion() {
         return currentVersion;
     }
 
+    @Override
     @NotNull
-    public String getConfigurationName() {
+    public String configurationName() {
         return configurationName;
     }
 
+    @Override
     @Nullable
-    public SmartPsiElementPointer<PsiElement> getPsiElementPointer() {
+    public SmartPsiElementPointer<PsiElement> psiElementPointer() {
         return psiElementPointer;
     }
 
-    public boolean isVersionVariable() {
-        return isVersionVariable;
-    }
-
+    @Override
     @Nullable
-    public String getVariableName() {
+    public String variableName() {
         return variableName;
     }
 
@@ -85,9 +81,9 @@ public class DependencyInfo {
         if (o == null || getClass() != o.getClass()) return false;
         DependencyInfo that = (DependencyInfo) o;
         return Objects.equals(group, that.group) &&
-               Objects.equals(artifact, that.artifact) &&
-               Objects.equals(currentVersion, that.currentVersion) &&
-               Objects.equals(configurationName, that.configurationName);
+                Objects.equals(artifact, that.artifact) &&
+                Objects.equals(currentVersion, that.currentVersion) &&
+                Objects.equals(configurationName, that.configurationName);
     }
 
     @Override
@@ -98,9 +94,9 @@ public class DependencyInfo {
     @Override
     public String toString() {
         return "DependencyInfo{" +
-               configurationName + "('" +
-               group + ":" + artifact + ":" + currentVersion + "'" +
-               (isVersionVariable ? ", variable=" + variableName : "") +
-               ")}";
+                configurationName + "('" +
+                group + ":" + artifact + ":" + currentVersion + "'" +
+                (isVersionVariable ? ", variable=" + variableName : "") +
+                ")}";
     }
 }

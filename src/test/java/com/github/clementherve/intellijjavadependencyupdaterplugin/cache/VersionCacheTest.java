@@ -14,7 +14,7 @@ public class VersionCacheTest {
 
     @Before
     public void setUp() {
-        cache = new VersionCache(null); // Project can be null for unit tests
+        cache = new VersionCache();
     }
 
     @Test

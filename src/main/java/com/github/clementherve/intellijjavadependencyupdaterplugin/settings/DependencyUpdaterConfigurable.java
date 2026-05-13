@@ -42,7 +42,7 @@ public class DependencyUpdaterConfigurable implements Configurable {
     }
 
     @Override
-    public void apply() throws ConfigurationException {
+    public void apply() {
         if (mySettingsPanel != null) {
             mySettingsPanel.apply();
         }

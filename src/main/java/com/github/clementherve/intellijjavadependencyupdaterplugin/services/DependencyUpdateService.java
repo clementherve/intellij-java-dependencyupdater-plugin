@@ -28,7 +28,7 @@ import java.util.List;
 @Service(Service.Level.PROJECT)
 public final class DependencyUpdateService {
 
-    private static final Logger LOG = Logger.getInstance(DependencyUpdateService.class);
+    private static final Logger LOGGER = Logger.getInstance(DependencyUpdateService.class);
 
     private final Project project;
     private final VersionCache cache;
@@ -56,20 +56,20 @@ public final class DependencyUpdateService {
     @Nullable
     public VersionCandidate checkForUpdate(@NotNull DependencyInfo dependency) {
         try {
-            List<String> versions = getVersions(dependency.getGroup(), dependency.getArtifact());
+            List<String> versions = getVersions(dependency.group(), dependency.artifact());
             if (versions.isEmpty()) {
                 return null;
             }
 
             VersionPolicy policy = getFirstPolicy();
             return policyEvaluator.findBestCandidate(
-                versions,
-                dependency.getCurrentVersion(),
-                policy,
-                getRepositorySource()
+                    versions,
+                    dependency.currentVersion(),
+                    policy,
+                    getRepositorySource()
             );
         } catch (Exception e) {
-            LOG.warn("Failed to check for update: " + dependency.getFullCoordinates(), e);
+            LOGGER.warn("Failed to check for update: " + dependency.getFullCoordinates(), e);
             return null;
         }
     }
@@ -85,23 +85,23 @@ public final class DependencyUpdateService {
     public VersionCandidate checkForUpdateFromCache(@NotNull DependencyInfo dependency) {
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
 
-        // Check cache only - never fetch from network
         List<String> cachedVersions = cache.getVersions(
-            dependency.getGroup(),
-            dependency.getArtifact(),
-            settings.getCacheTtlMinutes()
+                dependency.group(),
+                dependency.artifact(),
+                settings.getCacheTtlMinutes()
         );
 
-        if (cachedVersions == null) {
-            return null; // Not in cache
+        final boolean isNotInCache = cachedVersions == null;
+        if (isNotInCache) {
+            return null;
         }
 
         VersionPolicy policy = getFirstPolicy();
         return policyEvaluator.findBestCandidate(
-            cachedVersions,
-            dependency.getCurrentVersion(),
-            policy,
-            getRepositorySource()
+                cachedVersions,
+                dependency.currentVersion(),
+                policy,
+                getRepositorySource()
         );
     }
 
@@ -116,11 +116,10 @@ public final class DependencyUpdateService {
     public List<VersionCandidate> getAllCandidatesFromCache(@NotNull DependencyInfo dependency) {
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
 
-        // Check cache only - never fetch from network
         List<String> cachedVersions = cache.getVersions(
-            dependency.getGroup(),
-            dependency.getArtifact(),
-            settings.getCacheTtlMinutes()
+                dependency.group(),
+                dependency.artifact(),
+                settings.getCacheTtlMinutes()
         );
 
         if (cachedVersions == null) {
@@ -138,18 +137,17 @@ public final class DependencyUpdateService {
      * @param dependency the dependency to fetch versions for
      */
     public void scheduleCacheWarmup(@NotNull DependencyInfo dependency) {
-        LOG.debug("Scheduling cache warmup for dependency: " + dependency.getFullCoordinates());
+        LOGGER.debug("Scheduling cache warmup for dependency: " + dependency.getFullCoordinates());
 
-        // Show progress in the background
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Fetching versions for " + dependency.getArtifact(), false) {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Fetching versions for " + dependency.artifact(), false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 try {
                     indicator.setText("Fetching versions from repository...");
-                    getVersions(dependency.getGroup(), dependency.getArtifact());
-                    // This will populate the cache, and next highlighting pass will show the marker
+                    getVersions(dependency.group(), dependency.artifact());
+                    // next highlighting pass will show the marker
                 } catch (Exception e) {
-                    LOG.debug("Background cache warmup failed for " + dependency.getFullCoordinates(), e);
+                    LOGGER.debug("Background cache warmup failed for " + dependency.getFullCoordinates(), e);
                 }
             }
         });
@@ -158,7 +156,7 @@ public final class DependencyUpdateService {
     /**
      * Gets all available versions for a dependency (uses cache if available).
      *
-     * @param group the dependency group ID
+     * @param group    the dependency group ID
      * @param artifact the dependency artifact ID
      * @return a list of available versions
      */
@@ -169,7 +167,7 @@ public final class DependencyUpdateService {
         // Check cache first
         List<String> cachedVersions = cache.getVersions(group, artifact, settings.getCacheTtlMinutes());
         if (cachedVersions != null) {
-            LOG.debug("Using cached versions for " + group + ":" + artifact);
+            LOGGER.debug("Using cached versions for " + group + ":" + artifact);
             return cachedVersions;
         }
 
@@ -197,11 +195,11 @@ public final class DependencyUpdateService {
                 VersionRepository nexusClient = createNexusClient();
                 List<String> versions = nexusClient.fetchVersions(group, artifact);
                 if (!versions.isEmpty()) {
-                    LOG.info("Fetched " + versions.size() + " versions from Nexus for " + group + ":" + artifact);
+                    LOGGER.info("Fetched " + versions.size() + " versions from Nexus for " + group + ":" + artifact);
                     return versions;
                 }
             } catch (IOException e) {
-                LOG.warn("Nexus fetch failed for " + group + ":" + artifact + ", error: " + e.getMessage());
+                LOGGER.warn("Nexus fetch failed for " + group + ":" + artifact + ", error: " + e.getMessage());
                 if (!settings.isFallbackToMavenCentral()) {
                     throw e;
                 }
@@ -209,9 +207,9 @@ public final class DependencyUpdateService {
         }
 
         // Fallback to Maven Central
-        LOG.info("Fetching from Maven Central for " + group + ":" + artifact);
+        LOGGER.info("Fetching from Maven Central for " + group + ":" + artifact);
         List<String> versions = mavenCentralClient.fetchVersions(group, artifact);
-        LOG.info("Fetched " + versions.size() + " versions from Maven Central for " + group + ":" + artifact);
+        LOGGER.info("Fetched " + versions.size() + " versions from Maven Central for " + group + ":" + artifact);
         return versions;
     }
 
@@ -222,9 +220,9 @@ public final class DependencyUpdateService {
     private VersionRepository createNexusClient() {
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
         return new NexusClient(
-            settings.getNexusBaseUrl(),
-            settings.getNexusUsername(),
-            settings.getNexusPassword()
+                settings.getNexusBaseUrl(),
+                settings.getNexusUsername(),
+                settings.getNexusPassword()
         );
     }
 

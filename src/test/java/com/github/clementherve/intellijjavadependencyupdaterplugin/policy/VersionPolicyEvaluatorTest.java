@@ -34,8 +34,8 @@ public class VersionPolicyEvaluatorTest {
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Maven Central");
 
         assertEquals(2, candidates.size());
-        assertEquals("1.2.0", candidates.get(0).getVersion());
-        assertEquals("1.0.0", candidates.get(1).getVersion());
+        assertEquals("1.2.0", candidates.get(0).version());
+        assertEquals("1.0.0", candidates.get(1).version());
     }
 
     @Test
@@ -50,8 +50,8 @@ public class VersionPolicyEvaluatorTest {
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Maven Central");
 
         assertEquals(2, candidates.size());
-        assertEquals("1.2.0", candidates.get(0).getVersion());
-        assertEquals("1.0.0", candidates.get(1).getVersion());
+        assertEquals("1.2.0", candidates.get(0).version());
+        assertEquals("1.0.0", candidates.get(1).version());
     }
 
     @Test
@@ -80,8 +80,8 @@ public class VersionPolicyEvaluatorTest {
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Maven Central");
 
         assertEquals(2, candidates.size());
-        assertEquals("1.2.0", candidates.get(0).getVersion());
-        assertEquals("1.0.0", candidates.get(1).getVersion());
+        assertEquals("1.2.0", candidates.get(0).version());
+        assertEquals("1.0.0", candidates.get(1).version());
     }
 
     @Test
@@ -110,10 +110,10 @@ public class VersionPolicyEvaluatorTest {
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Maven Central");
 
         assertEquals(4, candidates.size());
-        assertEquals("3.0.0", candidates.get(0).getVersion());
-        assertEquals("2.0.0", candidates.get(1).getVersion());
-        assertEquals("1.5.0", candidates.get(2).getVersion());
-        assertEquals("1.0.0", candidates.get(3).getVersion());
+        assertEquals("3.0.0", candidates.get(0).version());
+        assertEquals("2.0.0", candidates.get(1).version());
+        assertEquals("1.5.0", candidates.get(2).version());
+        assertEquals("1.0.0", candidates.get(3).version());
     }
 
     @Test
@@ -128,7 +128,7 @@ public class VersionPolicyEvaluatorTest {
         VersionCandidate best = evaluator.findBestCandidate(versions, "1.5.0", stablePolicy, "Maven Central");
 
         assertNotNull(best);
-        assertEquals("2.1.0", best.getVersion());
+        assertEquals("2.1.0", best.version());
     }
 
     @Test
@@ -174,7 +174,7 @@ public class VersionPolicyEvaluatorTest {
         VersionCandidate best = evaluator.findBestCandidate(versions, "1.0.0", customPolicy, "Maven Central");
 
         assertNotNull(best);
-        assertEquals("2.0.0", best.getVersion());
+        assertEquals("2.0.0", best.version());
     }
 
     @Test
@@ -193,7 +193,7 @@ public class VersionPolicyEvaluatorTest {
         List<VersionCandidate> candidates = evaluator.evaluate(versions, policy, "Maven Central");
 
         assertEquals(3, candidates.size());
-        assertTrue(candidates.stream().noneMatch(c -> c.getVersion().contains("SNAPSHOT")));
+        assertTrue(candidates.stream().noneMatch(c -> c.version().contains("SNAPSHOT")));
     }
 
     @Test
@@ -212,8 +212,8 @@ public class VersionPolicyEvaluatorTest {
         List<VersionCandidate> candidates = evaluator.evaluate(versions, policy, "Maven Central");
 
         assertEquals(2, candidates.size());
-        assertEquals("2.0.0", candidates.get(0).getVersion());
-        assertEquals("1.0.0", candidates.get(1).getVersion());
+        assertEquals("2.0.0", candidates.get(0).version());
+        assertEquals("1.0.0", candidates.get(1).version());
     }
 
     @Test
@@ -240,7 +240,7 @@ public class VersionPolicyEvaluatorTest {
         VersionCandidate best = evaluator.findBestCandidate(versions, "unknown", stablePolicy, "Maven Central");
 
         assertNotNull(best);
-        assertEquals("3.0.0", best.getVersion());
+        assertEquals("3.0.0", best.version());
     }
 
     @Test
@@ -250,6 +250,6 @@ public class VersionPolicyEvaluatorTest {
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Private Nexus");
 
         assertEquals(1, candidates.size());
-        assertEquals("Private Nexus", candidates.get(0).getRepositorySource());
+        assertEquals("Private Nexus", candidates.get(0).repositorySource());
     }
 }

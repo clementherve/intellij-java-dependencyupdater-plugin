@@ -65,25 +65,24 @@ public class DependencyAnnotator implements Annotator {
 
         // Check if this element is one of the parsed dependency version strings
         for (DependencyInfo dependency : dependencies) {
-            if (dependency.getPsiElementPointer() == null) {
+            if (dependency.psiElementPointer() == null) {
                 continue;
             }
 
-            PsiElement depElement = dependency.getPsiElementPointer().getElement();
+            PsiElement depElement = dependency.psiElementPointer().getElement();
             if (depElement == null) {
                 continue;
             }
 
             // Check if this is the exact element we're looking for (by reference only)
             if (depElement == element) {
-                LOGGER.debug("Found matching dependency element: {}", dependency.getArtifact());
+                LOGGER.debug("Found matching dependency element: {}", dependency.artifact());
 
-                // Check cache for update (never block on network)
                 VersionCandidate candidate = service.checkForUpdateFromCache(dependency);
 
                 if (candidate != null) {
                     // Add inline annotation on the version string itself
-                    String message = dependency.getArtifact() + " → " + candidate.getVersion() + " available";
+                    String message = dependency.artifact() + " → " + candidate.version() + " available";
                     LOGGER.debug("Annotating with message: {}", message);
 
                     holder.newAnnotation(HighlightSeverity.WARNING, message)
@@ -91,7 +90,7 @@ public class DependencyAnnotator implements Annotator {
                             .tooltip(message)
                             .create();
                 } else {
-                    LOGGER.debug("No cached update for: {}", dependency.getArtifact());
+                    LOGGER.debug("No cached update for: {}", dependency.artifact());
                     // Schedule background fetch for next time
                     service.scheduleCacheWarmup(dependency);
                 }

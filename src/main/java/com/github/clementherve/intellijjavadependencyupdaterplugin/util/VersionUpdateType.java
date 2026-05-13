@@ -30,7 +30,7 @@ public class VersionUpdateType {
                                                      @NotNull List<VersionCandidate> candidates,
                                                      @NotNull UpdateType type) {
         for (VersionCandidate candidate : candidates) {
-            SemanticVersion candidateVersion = SemanticVersion.parse(candidate.getVersion());
+            SemanticVersion candidateVersion = SemanticVersion.parse(candidate.version());
             if (candidateVersion == null) {
                 continue;
             }

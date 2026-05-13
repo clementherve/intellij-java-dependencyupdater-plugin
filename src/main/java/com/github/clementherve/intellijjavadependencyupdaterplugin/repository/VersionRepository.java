@@ -13,7 +13,7 @@ public interface VersionRepository {
     /**
      * Fetches all available versions for a given dependency.
      *
-     * @param group the dependency group ID
+     * @param group    the dependency group ID
      * @param artifact the dependency artifact ID
      * @return a list of version strings
      * @throws IOException if the fetch fails

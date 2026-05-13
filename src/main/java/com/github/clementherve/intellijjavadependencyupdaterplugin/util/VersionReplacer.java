@@ -34,7 +34,7 @@ public class VersionReplacer {
         if (dependency.isVersionVariable()) {
             int result = Messages.showOkCancelDialog(
                 project,
-                "This version is defined by a variable (" + dependency.getVariableName() +
+                "This version is defined by a variable (" + dependency.variableName() +
                 "). Updating it may affect multiple dependencies. Continue?",
                 "Update Version Variable",
                 "Update",
@@ -70,7 +70,7 @@ public class VersionReplacer {
             if (dependency.isVersionVariable()) {
                 int result = Messages.showOkCancelDialog(
                     project,
-                    "This version is defined by a variable (" + dependency.getVariableName() +
+                    "This version is defined by a variable (" + dependency.variableName() +
                     "). Updating it may affect multiple dependencies. Continue?",
                     "Update Version Variable",
                     "Update",
@@ -94,11 +94,11 @@ public class VersionReplacer {
     private static void performUpdate(@NotNull Project project,
                                      @NotNull DependencyInfo dependency,
                                      @NotNull String newVersion) {
-        if (dependency.getPsiElementPointer() == null) {
+        if (dependency.psiElementPointer() == null) {
             return;
         }
 
-        PsiElement versionElement = dependency.getPsiElementPointer().getElement();
+        PsiElement versionElement = dependency.psiElementPointer().getElement();
         if (versionElement == null) {
             return;
         }
@@ -119,12 +119,12 @@ public class VersionReplacer {
             }
 
             // If it's a version variable, update the ext block instead
-            if (dependency.isVersionVariable() && dependency.getVariableName() != null) {
-                updateVariableInExtBlock(file, document, dependency.getVariableName(), newVersion);
+            if (dependency.isVersionVariable() && dependency.variableName() != null) {
+                updateVariableInExtBlock(file, document, dependency.variableName(), newVersion);
             } else {
                 // Regular dependency - update the version in place
                 String oldText = versionElement.getText();
-                String newText = oldText.replace(dependency.getCurrentVersion(), newVersion);
+                String newText = oldText.replace(dependency.currentVersion(), newVersion);
 
                 int start = versionElement.getTextRange().getStartOffset();
                 int end = versionElement.getTextRange().getEndOffset();

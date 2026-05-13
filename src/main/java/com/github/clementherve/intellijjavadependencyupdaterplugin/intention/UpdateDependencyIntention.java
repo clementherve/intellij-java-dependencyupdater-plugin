@@ -54,7 +54,7 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
         }
 
         // Apply the update (we're already in a write action due to startInWriteAction())
-        VersionReplacer.applyUpdateInWriteAction(project, dependency, candidate.getVersion());
+        VersionReplacer.applyUpdateInWriteAction(project, dependency, candidate.version());
     }
 
     @Override
@@ -108,8 +108,8 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
         // Find the dependency that contains this element
         int offset = element.getTextOffset();
         for (DependencyInfo dependency : dependencies) {
-            if (dependency.getPsiElementPointer() != null) {
-                PsiElement depElement = dependency.getPsiElementPointer().getElement();
+            if (dependency.psiElementPointer() != null) {
+                PsiElement depElement = dependency.psiElementPointer().getElement();
                 if (depElement != null) {
                     int start = depElement.getTextRange().getStartOffset();
                     int end = depElement.getTextRange().getEndOffset();

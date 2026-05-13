@@ -15,14 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service(Service.Level.PROJECT)
 public final class VersionCache {
 
-    private static final Logger LOG = Logger.getInstance(VersionCache.class);
+    private static final Logger LOGGER = Logger.getInstance(VersionCache.class);
 
     private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
-    private final Project project;
-
-    public VersionCache(Project project) {
-        this.project = project;
-    }
 
     public static VersionCache getInstance(@NotNull Project project) {
         return project.getService(VersionCache.class);
@@ -31,8 +26,8 @@ public final class VersionCache {
     /**
      * Gets cached versions for a dependency if available and not expired.
      *
-     * @param group the dependency group ID
-     * @param artifact the dependency artifact ID
+     * @param group      the dependency group ID
+     * @param artifact   the dependency artifact ID
      * @param ttlMinutes the TTL in minutes
      * @return the cached list of versions, or null if not cached or expired
      */
@@ -42,7 +37,7 @@ public final class VersionCache {
         CacheEntry entry = cache.get(key);
 
         if (entry == null) {
-            LOG.debug("Cache miss for " + key);
+            LOGGER.debug("Cache miss for " + key);
             return null;
         }
 
@@ -50,47 +45,41 @@ public final class VersionCache {
         long age = System.currentTimeMillis() - entry.timestamp;
 
         if (age > ttlMillis) {
-            LOG.debug("Cache expired for " + key + " (age: " + age + "ms, TTL: " + ttlMillis + "ms)");
             cache.remove(key);
             return null;
         }
 
-        LOG.debug("Cache hit for " + key);
         return entry.versions;
     }
 
     /**
      * Puts versions into the cache.
      *
-     * @param group the dependency group ID
+     * @param group    the dependency group ID
      * @param artifact the dependency artifact ID
      * @param versions the list of versions to cache
      */
     public void putVersions(@NotNull String group, @NotNull String artifact, @NotNull List<String> versions) {
         String key = createKey(group, artifact);
         cache.put(key, new CacheEntry(versions, System.currentTimeMillis()));
-        LOG.debug("Cached " + versions.size() + " versions for " + key);
     }
 
     /**
      * Invalidates the cache entry for a specific dependency.
      *
-     * @param group the dependency group ID
+     * @param group    the dependency group ID
      * @param artifact the dependency artifact ID
      */
     public void invalidate(@NotNull String group, @NotNull String artifact) {
         String key = createKey(group, artifact);
         cache.remove(key);
-        LOG.debug("Invalidated cache for " + key);
     }
 
     /**
      * Invalidates all cache entries.
      */
     public void invalidateAll() {
-        int size = cache.size();
         cache.clear();
-        LOG.info("Invalidated all cache entries (count: " + size + ")");
     }
 
     /**
@@ -110,11 +99,8 @@ public final class VersionCache {
     /**
      * Cache entry with timestamp for TTL checking.
      */
-    private static class CacheEntry {
-        final List<String> versions;
-        final long timestamp;
-
-        CacheEntry(@NotNull List<String> versions, long timestamp) {
+    private record CacheEntry(List<String> versions, long timestamp) {
+        private CacheEntry(@NotNull List<String> versions, long timestamp) {
             this.versions = versions;
             this.timestamp = timestamp;
         }

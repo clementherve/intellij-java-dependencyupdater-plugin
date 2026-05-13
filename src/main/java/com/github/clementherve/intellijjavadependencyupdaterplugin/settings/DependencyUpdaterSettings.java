@@ -19,8 +19,8 @@ import java.util.List;
  * Persistent settings for the Dependency Updater plugin.
  */
 @State(
-    name = "DependencyUpdaterSettings",
-    storages = @Storage("dependencyUpdater.xml")
+        name = "DependencyUpdaterSettings",
+        storages = @Storage("dependencyUpdater.xml")
 )
 @Service(Service.Level.PROJECT)
 public final class DependencyUpdaterSettings implements PersistentStateComponent<DependencyUpdaterSettings.State> {
@@ -78,7 +78,7 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
     private CredentialAttributes createCredentialAttributes() {
         String serviceName = "DependencyUpdater-" + myProject.getName();
         return new CredentialAttributes(
-            CredentialAttributesKt.generateServiceName("DependencyUpdater", serviceName)
+                CredentialAttributesKt.generateServiceName("DependencyUpdater", serviceName)
         );
     }
 

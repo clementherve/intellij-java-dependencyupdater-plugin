@@ -15,7 +15,6 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        // Ensure Groovy support is available
         myFixture.configureByText(GroovyFileType.GROOVY_FILE_TYPE, "");
     }
 
@@ -42,23 +41,23 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
         assertEquals(3, dependencies.size());
 
         DependencyInfo guava = dependencies.getFirst();
-        assertEquals("com.google.guava", guava.getGroup());
-        assertEquals("guava", guava.getArtifact());
-        assertEquals("31.1-jre", guava.getCurrentVersion());
-        assertEquals("implementation", guava.getConfigurationName());
+        assertEquals("com.google.guava", guava.group());
+        assertEquals("guava", guava.artifact());
+        assertEquals("31.1-jre", guava.currentVersion());
+        assertEquals("implementation", guava.configurationName());
         assertFalse(guava.isVersionVariable());
 
         DependencyInfo commonsLang = dependencies.get(1);
-        assertEquals("org.apache.commons", commonsLang.getGroup());
-        assertEquals("commons-lang3", commonsLang.getArtifact());
-        assertEquals("3.12.0", commonsLang.getCurrentVersion());
-        assertEquals("api", commonsLang.getConfigurationName());
+        assertEquals("org.apache.commons", commonsLang.group());
+        assertEquals("commons-lang3", commonsLang.artifact());
+        assertEquals("3.12.0", commonsLang.currentVersion());
+        assertEquals("api", commonsLang.configurationName());
 
         DependencyInfo junit = dependencies.get(2);
-        assertEquals("junit", junit.getGroup());
-        assertEquals("junit", junit.getArtifact());
-        assertEquals("4.13.2", junit.getCurrentVersion());
-        assertEquals("testImplementation", junit.getConfigurationName());
+        assertEquals("junit", junit.group());
+        assertEquals("junit", junit.artifact());
+        assertEquals("4.13.2", junit.currentVersion());
+        assertEquals("testImplementation", junit.configurationName());
     }
 
     public void test_parse_map_notation() {
@@ -76,16 +75,16 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
         assertEquals(2, dependencies.size());
 
         DependencyInfo guava = dependencies.getFirst();
-        assertEquals("com.google.guava", guava.getGroup());
-        assertEquals("guava", guava.getArtifact());
-        assertEquals("31.1-jre", guava.getCurrentVersion());
-        assertEquals("implementation", guava.getConfigurationName());
+        assertEquals("com.google.guava", guava.group());
+        assertEquals("guava", guava.artifact());
+        assertEquals("31.1-jre", guava.currentVersion());
+        assertEquals("implementation", guava.configurationName());
 
         DependencyInfo springBoot = dependencies.get(1);
-        assertEquals("org.springframework.boot", springBoot.getGroup());
-        assertEquals("spring-boot-starter", springBoot.getArtifact());
-        assertEquals("2.7.0", springBoot.getCurrentVersion());
-        assertEquals("api", springBoot.getConfigurationName());
+        assertEquals("org.springframework.boot", springBoot.group());
+        assertEquals("spring-boot-starter", springBoot.artifact());
+        assertEquals("2.7.0", springBoot.currentVersion());
+        assertEquals("api", springBoot.configurationName());
     }
 
     public void test_parse_with_variables() {
@@ -108,11 +107,11 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
         assertEquals(2, dependencies.size());
 
         DependencyInfo firstDependency = dependencies.getFirst();
-        assertEquals("com.google.guava", firstDependency.getGroup());
-        assertEquals("guava", firstDependency.getArtifact());
+        assertEquals("com.google.guava", firstDependency.group());
+        assertEquals("guava", firstDependency.artifact());
         assertTrue(firstDependency.isVersionVariable()); // todo: investigate why it's false
-        assertEquals("guavaVersion", firstDependency.getVariableName());
-        assertEquals("31.1-jre", firstDependency.getCurrentVersion());
+        assertEquals("guavaVersion", firstDependency.variableName());
+        assertEquals("31.1-jre", firstDependency.currentVersion());
 
     }
 }

@@ -50,7 +50,7 @@ public class DependencyUpdaterSettingsPanel {
         triggerModeComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-                                                         boolean isSelected, boolean cellHasFocus) {
+                                                          boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof DependencyUpdaterSettings.TriggerMode) {
                     setText(((DependencyUpdaterSettings.TriggerMode) value).getDisplayName());
@@ -60,23 +60,23 @@ public class DependencyUpdaterSettingsPanel {
         });
 
         myMainPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new JBLabel("Nexus Base URL:"), nexusBaseUrlField, 1, false)
-            .addComponentToRightColumn(new JBLabel("Example: https://nexus.company.com"), 0)
-            .addLabeledComponent(new JBLabel("Nexus username:"), nexusUsernameField, 1, false)
-            .addLabeledComponent(new JBLabel("Nexus password:"), nexusPasswordField, 1, false)
-            .addComponent(fallbackToMavenCentralCheckBox, 1)
-            .addSeparator(5)
-            .addLabeledComponent(new JBLabel("Cache TTL (minutes):"), cacheTtlSpinner, 1, false)
-            .addComponentToRightColumn(new JBLabel("How long to cache version information"), 0)
-            .addSeparator(5)
-            .addComponent(showGutterIconsCheckBox, 1)
-            .addComponent(showInlayHintsCheckBox, 1)
-            .addSeparator(5)
-            .addLabeledComponent(new JBLabel("Trigger mode:"), triggerModeComboBox, 1, false)
-            .addComponentToRightColumn(new JBLabel("When to check for dependency updates"), 0)
-            .addSeparator(10)
-            .addComponentFillVertically(new JPanel(), 0)
-            .getPanel();
+                .addLabeledComponent(new JBLabel("Nexus Base URL:"), nexusBaseUrlField, 1, false)
+                .addComponentToRightColumn(new JBLabel("Example: https://nexus.company.com"), 0)
+                .addLabeledComponent(new JBLabel("Nexus username:"), nexusUsernameField, 1, false)
+                .addLabeledComponent(new JBLabel("Nexus password:"), nexusPasswordField, 1, false)
+                .addComponent(fallbackToMavenCentralCheckBox, 1)
+                .addSeparator(5)
+                .addLabeledComponent(new JBLabel("Cache TTL (minutes):"), cacheTtlSpinner, 1, false)
+                .addComponentToRightColumn(new JBLabel("How long to cache version information"), 0)
+                .addSeparator(5)
+                .addComponent(showGutterIconsCheckBox, 1)
+                .addComponent(showInlayHintsCheckBox, 1)
+                .addSeparator(5)
+                .addLabeledComponent(new JBLabel("Trigger mode:"), triggerModeComboBox, 1, false)
+                .addComponentToRightColumn(new JBLabel("When to check for dependency updates"), 0)
+                .addSeparator(10)
+                .addComponentFillVertically(new JPanel(), 0)
+                .getPanel();
 
         myMainPanel.setBorder(JBUI.Borders.empty(10));
     }
@@ -102,7 +102,7 @@ public class DependencyUpdaterSettingsPanel {
         if (showInlayHintsCheckBox.isSelected() != settings.isShowInlayHints()) return true;
 
         DependencyUpdaterSettings.TriggerMode selectedMode =
-            (DependencyUpdaterSettings.TriggerMode) triggerModeComboBox.getSelectedItem();
+                (DependencyUpdaterSettings.TriggerMode) triggerModeComboBox.getSelectedItem();
         if (selectedMode != null && selectedMode != settings.getTriggerMode()) return true;
 
         return false;
@@ -125,7 +125,7 @@ public class DependencyUpdaterSettingsPanel {
         settings.setShowInlayHints(showInlayHintsCheckBox.isSelected());
 
         DependencyUpdaterSettings.TriggerMode selectedMode =
-            (DependencyUpdaterSettings.TriggerMode) triggerModeComboBox.getSelectedItem();
+                (DependencyUpdaterSettings.TriggerMode) triggerModeComboBox.getSelectedItem();
         if (selectedMode != null) {
             settings.setTriggerMode(selectedMode);
         }

@@ -6,18 +6,15 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.SmartPointerManager;
 import com.intellij.psi.SmartPsiElementPointer;
-import com.intellij.psi.impl.source.tree.CompositeElement;
-import com.intellij.psi.impl.source.tree.LeafPsiElement;
 import com.intellij.psi.util.PsiTreeUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.arguments.GrArgumentList;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.arguments.GrNamedArgument;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrExpression;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrMethodCall;
-import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.literals.GrLiteral;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.literals.GrString;
-import org.jetbrains.plugins.groovy.lang.psi.impl.statements.expressions.literals.GrStringImpl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +27,7 @@ import java.util.regex.Pattern;
  */
 public class GradlePsiParser implements DependencyParser {
 
-    private static final Logger LOG = Logger.getInstance(GradlePsiParser.class);
+    private static final Logger LOGGER = Logger.getInstance(GradlePsiParser.class);
 
     private static final List<String> KNOWN_CONFIGURATIONS = Arrays.asList(
             "implementation", "api", "compileOnly", "runtimeOnly",
@@ -38,10 +35,11 @@ public class GradlePsiParser implements DependencyParser {
             "annotationProcessor", "kapt"
     );
 
-    // fixme:
+    // group:artifact:version
     private static final Pattern DEPENDENCY_PATTERN = Pattern.compile(
-            "([^:]+):([^:]+):([^:]+)?"  // group:artifact:version
+            "([^:]+):([^:]+):([^:]+)?"
     );
+    private static final String EXT_BLOCK_CONSTANT = "ext";
 
     @Override
     public boolean canParse(@NotNull PsiFile psiFile) {
@@ -53,7 +51,6 @@ public class GradlePsiParser implements DependencyParser {
     public List<DependencyInfo> parseDependencies(@NotNull PsiFile psiFile) {
         List<DependencyInfo> dependencies = new ArrayList<>();
 
-        // Find all method calls in the file
         for (GrMethodCall methodCall : PsiTreeUtil.findChildrenOfType(psiFile, GrMethodCall.class)) {
             try {
                 DependencyInfo dependency = parseDependencyFromMethodCall(methodCall, psiFile);
@@ -64,11 +61,10 @@ public class GradlePsiParser implements DependencyParser {
                 // Rethrow - this is a control flow exception, not an error
                 throw e;
             } catch (Exception e) {
-                LOG.debug("Failed to parse dependency from method call", e);
+                LOGGER.debug("Failed to parse dependency from method call", e);
             }
         }
 
-        LOG.info("Parsed " + dependencies.size() + " dependencies from " + psiFile.getName());
         return dependencies;
     }
 
@@ -88,28 +84,23 @@ public class GradlePsiParser implements DependencyParser {
             return null;
         }
 
-        // Try string notation first: implementation("group:artifact:version")
-        GrExpression[] args = argumentList.getExpressionArguments();
-        if (args.length > 0) {
-            // Handle plain string literals: 'group:artifact:version'
-            if (args[0] instanceof final GrLiteral literal) {
+        GrExpression[] expressionArguments = argumentList.getExpressionArguments();
+        if (expressionArguments.length > 0) {
+            if (expressionArguments[0] instanceof final GrLiteral literal) {
                 Object value = literal.getValue();
                 if (value instanceof String) {
                     return parseStringNotation((String) value, methodName, literal, psiFile);
                 }
 
-
-                if (args[0] instanceof final GrString gstring) {
-                    // Handle GStrings with variable interpolation: "group:artifact:$version"
+                if (literal instanceof final GrString gstring) {
                     return parseGStringNotation(gstring, methodName, psiFile);
                 }
             }
         }
 
-        // Try map notation: implementation(group: 'g', name: 'a', version: 'v')
-        GrNamedArgument[] namedArgs = argumentList.getNamedArguments();
-        if (namedArgs.length > 0) {
-            return parseMapNotation(namedArgs, methodName, psiFile);
+        GrNamedArgument[] namedArguments = argumentList.getNamedArguments();
+        if (namedArguments.length > 0) {
+            return parseMapNotation(namedArguments, methodName, psiFile);
         }
 
         return null;
@@ -121,7 +112,6 @@ public class GradlePsiParser implements DependencyParser {
     private DependencyInfo parseGStringNotation(@NotNull GrString gstring,
                                                 @NotNull String configurationName,
                                                 @NotNull PsiFile psiFile) {
-        // Get all content parts and injections from the GString
         StringBuilder fullString = new StringBuilder();
         String variableName;
         boolean hasVariable = false;
@@ -150,8 +140,14 @@ public class GradlePsiParser implements DependencyParser {
         if (variableName.startsWith("$")) {
             variableName = variableName.substring(1);
             resolvedVariable = resolveVariable(variableName, psiFile);
+            hasVariable = true;
         } else {
             resolvedVariable = variableName;
+        }
+
+        if (StringUtils.isBlank(resolvedVariable)) {
+            resolvedVariable = "";
+            hasVariable = false;
         }
 
         SmartPsiElementPointer<PsiElement> pointer = SmartPointerManager.createPointer(gstring);
@@ -195,7 +191,7 @@ public class GradlePsiParser implements DependencyParser {
             if (resolved != null) {
                 resolvedVersion = resolved;
             } else {
-                LOG.debug("Could not resolve variable: " + variableName);
+                LOGGER.debug("Could not resolve variable: " + variableName);
             }
         }
 
@@ -251,6 +247,7 @@ public class GradlePsiParser implements DependencyParser {
             return null;
         }
 
+        // Check if version is a variable reference (starts with $)
         boolean isVersionVariable = version.startsWith("$");
         String variableName = null;
         String resolvedVersion = version;
@@ -262,12 +259,11 @@ public class GradlePsiParser implements DependencyParser {
             if (resolved != null) {
                 resolvedVersion = resolved;
             } else {
-                LOG.debug("Could not resolve variable: " + variableName);
+                LOGGER.debug("Could not resolve variable: " + variableName);
             }
         }
 
-        SmartPsiElementPointer<PsiElement> pointer = versionElement != null ?
-                SmartPointerManager.createPointer(versionElement) : null;
+        SmartPsiElementPointer<PsiElement> pointer = SmartPointerManager.createPointer(versionElement);
 
         return new DependencyInfo(
                 group,
@@ -288,24 +284,15 @@ public class GradlePsiParser implements DependencyParser {
      * @return the resolved value, or null if not found
      */
     private String resolveVariable(@NotNull String variableName, @NotNull PsiFile psiFile) {
-        // Find all method calls looking for ext block
         for (GrMethodCall methodCall : PsiTreeUtil.findChildrenOfType(psiFile, GrMethodCall.class)) {
             PsiElement methodElement = methodCall.getInvokedExpression();
-            if ("ext".equals(methodElement.getText())) {
-                // Found ext block, look for variable assignment
+
+            final boolean hasExtBlock = EXT_BLOCK_CONSTANT.equals(methodElement.getText());
+            if (hasExtBlock) {
                 String value = findVariableInExtBlock(variableName, methodCall);
                 if (value != null) {
                     return value;
                 }
-            }
-        }
-
-        // Also check for top-level assignments: variableName = 'value'
-        // This handles cases where variables are defined outside ext{}
-        for (PsiElement element : PsiTreeUtil.findChildrenOfAnyType(psiFile, GrMethodCall.class)) {
-            String value = findTopLevelVariable(variableName, psiFile);
-            if (value != null) {
-                return value;
             }
         }
 
@@ -314,31 +301,16 @@ public class GradlePsiParser implements DependencyParser {
 
     /**
      * Searches for a variable assignment within an ext{} block.
+     * todo: optimization: parse the ext block once and cache the result
      */
     private String findVariableInExtBlock(@NotNull String variableName, @NotNull GrMethodCall extCall) {
-        // The ext block closure contains the assignments
         for (PsiElement child : extCall.getChildren()) {
             String text = child.getText();
-            // Look for pattern: variableName = 'value'
             Pattern pattern = Pattern.compile(variableName + "\\s*=\\s*['\"]([^'\"]+)['\"]");
             Matcher matcher = pattern.matcher(text);
             if (matcher.find()) {
                 return matcher.group(1);
             }
-        }
-        return null;
-    }
-
-    /**
-     * Searches for a top-level variable assignment.
-     */
-    private String findTopLevelVariable(@NotNull String variableName, @NotNull PsiFile psiFile) {
-        String fileText = psiFile.getText();
-        // Look for pattern: variableName = 'value' at top level
-        Pattern pattern = Pattern.compile("(?:^|\\n)\\s*" + variableName + "\\s*=\\s*['\"]([^'\"]+)['\"]");
-        Matcher matcher = pattern.matcher(fileText);
-        if (matcher.find()) {
-            return matcher.group(1);
         }
         return null;
     }

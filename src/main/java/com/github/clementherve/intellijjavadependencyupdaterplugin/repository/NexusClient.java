@@ -26,8 +26,8 @@ public class NexusClient implements VersionRepository {
     private final String password;
 
     public NexusClient(@NotNull String baseUrl,
-                      @Nullable String username,
-                      @Nullable String password) {
+                       @Nullable String username,
+                       @Nullable String password) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.username = username;
         this.password = password;
@@ -38,7 +38,7 @@ public class NexusClient implements VersionRepository {
     public List<String> fetchVersions(@NotNull String group, @NotNull String artifact) throws IOException {
         String groupPath = group.replace('.', '/');
         String metadataUrl = String.format("%s/%s/%s/maven-metadata.xml",
-            baseUrl, groupPath, artifact);
+                baseUrl, groupPath, artifact);
 
         LOG.info("Fetching versions from Nexus: " + metadataUrl);
 
@@ -53,14 +53,14 @@ public class NexusClient implements VersionRepository {
             }
 
             String xmlContent = HttpRequests.request(metadataUrl)
-                .connectTimeout(TIMEOUT_MS)
-                .readTimeout(TIMEOUT_MS)
-                .tuner(connection -> {
-                    if (authHeader != null) {
-                        connection.setRequestProperty("Authorization", authHeader);
-                    }
-                })
-                .readString(null);
+                    .connectTimeout(TIMEOUT_MS)
+                    .readTimeout(TIMEOUT_MS)
+                    .tuner(connection -> {
+                        if (authHeader != null) {
+                            connection.setRequestProperty("Authorization", authHeader);
+                        }
+                    })
+                    .readString(null);
 
             return parseVersionsFromMetadata(xmlContent);
 
@@ -93,6 +93,7 @@ public class NexusClient implements VersionRepository {
         List<String> versions = new ArrayList<>();
 
         try {
+            // todo: use a proper XML parser and make it common with the maven central client
             // Simple XML parsing - extract <version>...</version> tags
             int pos = 0;
             while (true) {

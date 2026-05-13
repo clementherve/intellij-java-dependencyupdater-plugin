@@ -28,15 +28,15 @@ public class MavenCentralClient implements VersionRepository {
         // Convert group ID dots to slashes (e.g., com.google.guava -> com/google/guava)
         String groupPath = group.replace('.', '/');
         String metadataUrl = String.format("%s/%s/%s/maven-metadata.xml",
-            MAVEN_CENTRAL_BASE_URL, groupPath, artifact);
+                MAVEN_CENTRAL_BASE_URL, groupPath, artifact);
 
         LOG.info("Fetching versions from Maven Central: " + metadataUrl);
 
         try {
             String xmlContent = HttpRequests.request(metadataUrl)
-                .connectTimeout(TIMEOUT_MS)
-                .readTimeout(TIMEOUT_MS)
-                .readString(null);
+                    .connectTimeout(TIMEOUT_MS)
+                    .readTimeout(TIMEOUT_MS)
+                    .readString(null);
 
             return parseVersionsFromMetadata(xmlContent);
         } catch (HttpRequests.HttpStatusException e) {
@@ -61,12 +61,12 @@ public class MavenCentralClient implements VersionRepository {
      * Parses version strings from Maven metadata XML.
      * Expected format:
      * <metadata>
-     *   <versioning>
-     *     <versions>
-     *       <version>1.0.0</version>
-     *       <version>1.1.0</version>
-     *     </versions>
-     *   </versioning>
+     * <versioning>
+     * <versions>
+     * <version>1.0.0</version>
+     * <version>1.1.0</version>
+     * </versions>
+     * </versioning>
      * </metadata>
      */
     @NotNull

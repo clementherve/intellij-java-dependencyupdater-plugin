@@ -9,31 +9,31 @@ import java.util.Objects;
 /**
  * Represents a version candidate that passed policy filters.
  */
-public class VersionCandidate implements Comparable<VersionCandidate> {
-    private final String version;
-    private final SemanticVersion semanticVersion;
-    private final String repositorySource;
-
+public record VersionCandidate(String version, SemanticVersion semanticVersion,
+                               String repositorySource) implements Comparable<VersionCandidate> {
     public VersionCandidate(@NotNull String version,
-                           @Nullable SemanticVersion semanticVersion,
-                           @NotNull String repositorySource) {
+                            @Nullable SemanticVersion semanticVersion,
+                            @NotNull String repositorySource) {
         this.version = version;
         this.semanticVersion = semanticVersion;
         this.repositorySource = repositorySource;
     }
 
+    @Override
     @NotNull
-    public String getVersion() {
+    public String version() {
         return version;
     }
 
+    @Override
     @Nullable
-    public SemanticVersion getSemanticVersion() {
+    public SemanticVersion semanticVersion() {
         return semanticVersion;
     }
 
+    @Override
     @NotNull
-    public String getRepositorySource() {
+    public String repositorySource() {
         return repositorySource;
     }
 
@@ -56,7 +56,7 @@ public class VersionCandidate implements Comparable<VersionCandidate> {
         if (o == null || getClass() != o.getClass()) return false;
         VersionCandidate that = (VersionCandidate) o;
         return Objects.equals(version, that.version) &&
-               Objects.equals(repositorySource, that.repositorySource);
+                Objects.equals(repositorySource, that.repositorySource);
     }
 
     @Override

@@ -27,7 +27,7 @@ public class SemanticVersion implements Comparable<SemanticVersion> {
     private final int qualifierVersion;
     private final String originalVersion;
 
-    private enum Qualifier {
+    public enum Qualifier {
         ALPHA(1),
         BETA(2),
         MILESTONE(3),
@@ -45,29 +45,19 @@ public class SemanticVersion implements Comparable<SemanticVersion> {
             return priority;
         }
 
-        @Nullable
         public static Qualifier fromString(@Nullable String str) {
             if (str == null || str.isEmpty()) {
                 return RELEASE;
             }
             String lower = str.toLowerCase();
-            switch (lower) {
-                case "alpha":
-                case "a":
-                    return ALPHA;
-                case "beta":
-                case "b":
-                    return BETA;
-                case "milestone":
-                case "m":
-                    return MILESTONE;
-                case "rc":
-                    return RC;
-                case "snapshot":
-                    return SNAPSHOT;
-                default:
-                    return RELEASE;
-            }
+            return switch (lower) {
+                case "alpha", "a" -> ALPHA;
+                case "beta", "b" -> BETA;
+                case "milestone", "m" -> MILESTONE;
+                case "rc" -> RC;
+                case "snapshot" -> SNAPSHOT;
+                default -> RELEASE;
+            };
         }
     }
 

@@ -5,36 +5,34 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Represents a version policy with include/exclude patterns.
  */
-public class VersionPolicy {
-    private final String name;
-    private final List<String> includePatterns;
-    private final List<String> excludePatterns;
-
+public record VersionPolicy(String name, List<String> includePatterns, List<String> excludePatterns) {
     public VersionPolicy(@NotNull String name,
-                        @NotNull List<String> includePatterns,
-                        @NotNull List<String> excludePatterns) {
+                         @NotNull List<String> includePatterns,
+                         @NotNull List<String> excludePatterns) {
         this.name = name;
         this.includePatterns = new ArrayList<>(includePatterns);
         this.excludePatterns = new ArrayList<>(excludePatterns);
     }
 
+    @Override
     @NotNull
-    public String getName() {
+    public String name() {
         return name;
     }
 
+    @Override
     @NotNull
-    public List<String> getIncludePatterns() {
+    public List<String> includePatterns() {
         return Collections.unmodifiableList(includePatterns);
     }
 
+    @Override
     @NotNull
-    public List<String> getExcludePatterns() {
+    public List<String> excludePatterns() {
         return Collections.unmodifiableList(excludePatterns);
     }
 
@@ -49,26 +47,11 @@ public class VersionPolicy {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        VersionPolicy that = (VersionPolicy) o;
-        return Objects.equals(name, that.name) &&
-               Objects.equals(includePatterns, that.includePatterns) &&
-               Objects.equals(excludePatterns, that.excludePatterns);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(name, includePatterns, excludePatterns);
-    }
-
-    @Override
     public String toString() {
         return "VersionPolicy{" +
-               "name='" + name + '\'' +
-               ", includes=" + includePatterns.size() +
-               ", excludes=" + excludePatterns.size() +
-               '}';
+                "name='" + name + '\'' +
+                ", includes=" + includePatterns.size() +
+                ", excludes=" + excludePatterns.size() +
+                '}';
     }
 }

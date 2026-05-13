@@ -48,7 +48,7 @@ public class UpdateDependencyToPatchIntention extends PsiElementBaseIntentionAct
             return;
         }
 
-        VersionReplacer.applyUpdateInWriteAction(project, dependency, candidate.getVersion());
+        VersionReplacer.applyUpdateInWriteAction(project, dependency, candidate.version());
     }
 
     @Override
@@ -94,8 +94,8 @@ public class UpdateDependencyToPatchIntention extends PsiElementBaseIntentionAct
         int offset = element.getTextOffset();
 
         for (DependencyInfo dependency : dependencies) {
-            if (dependency.getPsiElementPointer() != null) {
-                PsiElement depElement = dependency.getPsiElementPointer().getElement();
+            if (dependency.psiElementPointer() != null) {
+                PsiElement depElement = dependency.psiElementPointer().getElement();
                 if (depElement != null) {
                     int start = depElement.getTextRange().getStartOffset();
                     int end = depElement.getTextRange().getEndOffset();
@@ -110,7 +110,7 @@ public class UpdateDependencyToPatchIntention extends PsiElementBaseIntentionAct
     }
 
     private VersionCandidate findPatchUpdate(@NotNull Project project, @NotNull DependencyInfo dependency) {
-        SemanticVersion currentVersion = SemanticVersion.parse(dependency.getCurrentVersion());
+        SemanticVersion currentVersion = SemanticVersion.parse(dependency.currentVersion());
         if (currentVersion == null) {
             return null;
         }

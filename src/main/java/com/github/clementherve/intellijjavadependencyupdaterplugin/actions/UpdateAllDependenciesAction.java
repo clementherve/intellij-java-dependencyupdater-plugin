@@ -40,22 +40,20 @@ public class UpdateAllDependenciesAction extends AnAction {
         String fileName = file.getName();
         if (!"build.gradle".equals(fileName) && !"build.gradle.kts".equals(fileName)) {
             Messages.showInfoMessage(
-                project,
-                "This action only works on build.gradle or build.gradle.kts files.",
-                "Update All Dependencies"
+                    project,
+                    "This action only works on build.gradle or build.gradle.kts files.",
+                    "Update All Dependencies"
             );
             return;
         }
 
-        // Run in background with progress
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Checking for Dependency Updates", true) {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Checking for dependency updates", true) {
             private final Map<DependencyInfo, VersionCandidate> updates = new HashMap<>();
 
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setText("Parsing dependencies...");
 
-                // Parse dependencies in a read action
                 List<DependencyInfo> dependencies = ReadAction.compute(() -> {
                     DependencyParser parser = DependencyParserFactory.getParser(file);
                     if (parser == null) {
@@ -78,11 +76,10 @@ public class UpdateAllDependenciesAction extends AnAction {
 
                     DependencyInfo dependency = dependencies.get(i);
                     indicator.setFraction((double) i / dependencies.size());
-                    indicator.setText2("Checking " + dependency.getArtifact() + "...");
+                    indicator.setText2("Checking " + dependency.artifact() + "...");
 
                     VersionCandidate candidate = service.checkForUpdateFromCache(dependency);
                     if (candidate == null) {
-                        // Fetch from network
                         candidate = service.checkForUpdate(dependency);
                     }
 
@@ -96,57 +93,61 @@ public class UpdateAllDependenciesAction extends AnAction {
             public void onSuccess() {
                 if (updates.isEmpty()) {
                     Messages.showInfoMessage(
-                        project,
-                        "All dependencies are up to date!",
-                        "Update All Dependencies"
+                            project,
+                            "All dependencies are up to date!",
+                            "Update All Dependencies"
                     );
                     return;
                 }
 
-                // Show confirmation dialog
-                StringBuilder message = new StringBuilder("The following dependencies will be updated:\n\n");
-                for (Map.Entry<DependencyInfo, VersionCandidate> entry : updates.entrySet()) {
-                    DependencyInfo dep = entry.getKey();
-                    VersionCandidate candidate = entry.getValue();
-                    message.append(String.format("%s: %s → %s\n",
-                        dep.getArtifact(),
-                        dep.getCurrentVersion(),
-                        candidate.getVersion()));
-                }
-
+                StringBuilder message = getMessage();
                 int result = Messages.showOkCancelDialog(
-                    project,
-                    message.toString(),
-                    "Update " + updates.size() + " Dependencies",
-                    "Update All",
-                    "Cancel",
-                    Messages.getQuestionIcon()
+                        project,
+                        message.toString(),
+                        "Update " + updates.size() + " Dependencies",
+                        "Update All",
+                        "Cancel",
+                        Messages.getQuestionIcon()
                 );
 
                 if (result == Messages.OK) {
                     // Apply updates
                     for (Map.Entry<DependencyInfo, VersionCandidate> entry : updates.entrySet()) {
                         VersionReplacer.applyUpdate(
-                            project,
-                            entry.getKey(),
-                            entry.getValue().getVersion()
+                                project,
+                                entry.getKey(),
+                                entry.getValue().version()
                         );
                     }
 
                     Messages.showInfoMessage(
-                        project,
-                        "Successfully updated " + updates.size() + " dependencies!",
-                        "Update All Dependencies"
+                            project,
+                            "Successfully updated " + updates.size() + " dependencies!",
+                            "Update All Dependencies"
                     );
                 }
+            }
+
+            @NotNull
+            private StringBuilder getMessage() {
+                StringBuilder message = new StringBuilder("The following dependencies will be updated:\n\n");
+                for (Map.Entry<DependencyInfo, VersionCandidate> entry : updates.entrySet()) {
+                    DependencyInfo dep = entry.getKey();
+                    VersionCandidate candidate = entry.getValue();
+                    message.append(String.format("%s: %s → %s\n",
+                            dep.artifact(),
+                            dep.currentVersion(),
+                            candidate.version()));
+                }
+                return message;
             }
 
             @Override
             public void onThrowable(@NotNull Throwable error) {
                 Messages.showErrorDialog(
-                    project,
-                    "Failed to check for updates: " + error.getMessage(),
-                    "Update All Dependencies"
+                        project,
+                        "Failed to check for updates: " + error.getMessage(),
+                        "Update All Dependencies"
                 );
             }
         });
@@ -156,7 +157,7 @@ public class UpdateAllDependenciesAction extends AnAction {
     public void update(@NotNull AnActionEvent e) {
         PsiFile file = e.getData(CommonDataKeys.PSI_FILE);
         boolean enabled = file != null &&
-            ("build.gradle".equals(file.getName()) || "build.gradle.kts".equals(file.getName()));
+                ("build.gradle".equals(file.getName()) || "build.gradle.kts".equals(file.getName()));
         e.getPresentation().setEnabledAndVisible(enabled);
     }
 }

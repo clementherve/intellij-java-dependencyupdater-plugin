@@ -11,7 +11,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import java.util.stream.Collectors;
 
 /**
  * Evaluates version candidates against version policies.
@@ -68,8 +67,8 @@ public class VersionPolicyEvaluator {
 
         // Find the highest version that is greater than the current version
         for (VersionCandidate candidate : candidates) {
-            if (candidate.getSemanticVersion() != null &&
-                candidate.getSemanticVersion().compareTo(current) > 0) {
+            if (candidate.semanticVersion() != null &&
+                candidate.semanticVersion().compareTo(current) > 0) {
                 return candidate;
             }
         }
@@ -86,8 +85,8 @@ public class VersionPolicyEvaluator {
      */
     private boolean matchesPolicy(@NotNull String version, @NotNull VersionPolicy policy) {
         // Check include patterns - at least one must match
-        boolean includeMatch = policy.getIncludePatterns().isEmpty();
-        for (String pattern : policy.getIncludePatterns()) {
+        boolean includeMatch = policy.includePatterns().isEmpty();
+        for (String pattern : policy.includePatterns()) {
             if (matchesPattern(version, pattern)) {
                 includeMatch = true;
                 break;
@@ -99,7 +98,7 @@ public class VersionPolicyEvaluator {
         }
 
         // Check exclude patterns - none must match
-        for (String pattern : policy.getExcludePatterns()) {
+        for (String pattern : policy.excludePatterns()) {
             if (matchesPattern(version, pattern)) {
                 return false;
             }
