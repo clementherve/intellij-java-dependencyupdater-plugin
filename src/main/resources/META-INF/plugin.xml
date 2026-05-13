@@ -1,19 +1,49 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.clementherve.intellijjavadependencyupdaterplugin</id>
-    <name>intellij-java-dependencyupdater-plugin</name>
+    <name>Gradle Dependency Updater</name>
     <vendor>clementherve</vendor>
     <description><![CDATA[
-        <p><b>intellij-java-dependencyupdater-plugin</b> is a repository that provides a pure template to make it easier to create a new plugin project.</p>
-        <p>The main goal of this template is to speed up the setup phase of plugin development for both new and experienced developers by preconfiguring the project scaffold and CI, linking to the proper documentation pages, and keeping everything organized.</p>
+        <p><b>Gradle Dependency Updater</b> helps you keep your Gradle dependencies up to date.</p>
+        <p>Features:</p>
+        <ul>
+            <li>Automatic detection of outdated dependencies in build.gradle and build.gradle.kts files</li>
+            <li>Visual gutter icons indicating available updates</li>
+            <li>Alt+Enter quick-fix intentions to update dependencies</li>
+            <li>Configurable version policies (stable only, include/exclude patterns)</li>
+            <li>Support for Maven Central and private Nexus repositories</li>
+            <li>Smart caching to minimize network requests</li>
+        </ul>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>org.intellij.groovy</depends>
+    <depends>org.jetbrains.kotlin</depends>
 
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <resource-bundle>messages.DependencyUpdaterBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.clementherve.intellijjavadependencyupdaterplugin.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.clementherve.intellijjavadependencyupdaterplugin.startup.MyProjectActivity" />
+        <!-- Settings -->
+        <projectConfigurable
+                parentId="tools"
+                instance="com.github.clementherve.intellijjavadependencyupdaterplugin.settings.DependencyUpdaterConfigurable"
+                id="tools.dependency.updater"
+                displayName="Dependency Updater"/>
+        <projectService
+                serviceImplementation="com.github.clementherve.intellijjavadependencyupdaterplugin.settings.DependencyUpdaterSettings"/>
+
+        <!-- Services -->
+        <projectService
+                serviceImplementation="com.github.clementherve.intellijjavadependencyupdaterplugin.cache.VersionCache"/>
+        <projectService
+                serviceImplementation="com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService"/>
+
+        <!-- Gutter icons -->
+        <codeInsight.lineMarkerProvider
+                language="Groovy"
+                implementationClass="com.github.clementherve.intellijjavadependencyupdaterplugin.marker.DependencyLineMarkerProvider"/>
+        <codeInsight.lineMarkerProvider
+                language="kotlin"
+                implementationClass="com.github.clementherve.intellijjavadependencyupdaterplugin.marker.DependencyLineMarkerProvider"/>
     </extensions>
 </idea-plugin>
