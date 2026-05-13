@@ -114,4 +114,87 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
         assertEquals("31.1-jre", firstDependency.currentVersion());
 
     }
+
+    public void test_parse_plugins_block() {
+        String content = """
+                plugins {
+                    id 'java'
+                    id 'org.springframework.boot' version '3.5.6'
+                    id 'io.spring.dependency-management' version '1.1.7'
+                    id 'org.graalvm.buildtools.native' version '0.10.5'
+                    id "com.github.ben-manes.versions" version '0.53.0'
+                }
+                """;
+
+        PsiFile file = myFixture.configureByText(GroovyFileType.GROOVY_FILE_TYPE, content);
+        GradlePsiParser parser = new GradlePsiParser();
+
+        List<DependencyInfo> plugins = parser.parseDependencies(file);
+
+        // Should find 4 plugins (java plugin has no version, so it won't be parsed)
+        assertEquals(4, plugins.size());
+
+        // Test Spring Boot plugin
+        DependencyInfo springBoot = plugins.get(0);
+        assertEquals("", springBoot.group()); // Empty group for plugins
+        assertEquals("org.springframework.boot", springBoot.artifact());
+        assertEquals("3.5.6", springBoot.currentVersion());
+        assertEquals("plugin", springBoot.configurationName());
+        assertFalse(springBoot.isVersionVariable());
+
+        // Test Dependency Management plugin
+        DependencyInfo depMgmt = plugins.get(1);
+        assertEquals("", depMgmt.group());
+        assertEquals("io.spring.dependency-management", depMgmt.artifact());
+        assertEquals("1.1.7", depMgmt.currentVersion());
+        assertEquals("plugin", depMgmt.configurationName());
+
+        // Test GraalVM plugin
+        DependencyInfo graalvm = plugins.get(2);
+        assertEquals("", graalvm.group());
+        assertEquals("org.graalvm.buildtools.native", graalvm.artifact());
+        assertEquals("0.10.5", graalvm.currentVersion());
+        assertEquals("plugin", graalvm.configurationName());
+
+        // Test Versions plugin (uses double quotes)
+        DependencyInfo versions = plugins.get(3);
+        assertEquals("", versions.group());
+        assertEquals("com.github.ben-manes.versions", versions.artifact());
+        assertEquals("0.53.0", versions.currentVersion());
+        assertEquals("plugin", versions.configurationName());
+    }
+
+    public void test_parse_plugins_and_dependencies_together() {
+        String content = """
+                plugins {
+                    id 'org.springframework.boot' version '3.5.6'
+                    id 'io.spring.dependency-management' version '1.1.7'
+                }
+
+                dependencies {
+                    implementation 'com.google.guava:guava:31.1-jre'
+                    testImplementation 'junit:junit:4.13.2'
+                }
+                """;
+
+        PsiFile file = myFixture.configureByText(GroovyFileType.GROOVY_FILE_TYPE, content);
+        GradlePsiParser parser = new GradlePsiParser();
+
+        List<DependencyInfo> all = parser.parseDependencies(file);
+
+        // Should find 2 plugins + 2 dependencies = 4 total
+        assertEquals(4, all.size());
+
+        // Verify plugins are parsed
+        long pluginCount = all.stream()
+                .filter(dep -> "plugin".equals(dep.configurationName()))
+                .count();
+        assertEquals(2, pluginCount);
+
+        // Verify regular dependencies are parsed
+        long dependencyCount = all.stream()
+                .filter(dep -> !"plugin".equals(dep.configurationName()))
+                .count();
+        assertEquals(2, dependencyCount);
+    }
 }

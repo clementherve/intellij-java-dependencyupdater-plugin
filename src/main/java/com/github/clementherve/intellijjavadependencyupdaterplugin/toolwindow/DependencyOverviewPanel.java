@@ -22,7 +22,6 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -284,7 +283,7 @@ public class DependencyOverviewPanel extends JPanel {
         int modelRow = table.convertRowIndexToModel(selectedRow);
         DependencyTableModel.DependencyRow row = tableModel.getRow(modelRow);
 
-        SmartPsiElementPointer<PsiElement> pointer = row.dependency.psiElementPointer();
+        SmartPsiElementPointer<PsiElement> pointer = row.dependency().psiElementPointer();
         if (pointer == null) {
             return;
         }
@@ -319,7 +318,7 @@ public class DependencyOverviewPanel extends JPanel {
         for (int selectedRow : selectedRows) {
             int modelRow = table.convertRowIndexToModel(selectedRow);
             DependencyTableModel.DependencyRow row = tableModel.getRow(modelRow);
-            if (row.latestVersion != null || pickVersion) {
+            if (row.latestVersion() != null || pickVersion) {
                 rowsToUpdate.add(row);
             }
         }
@@ -333,10 +332,10 @@ public class DependencyOverviewPanel extends JPanel {
             // Pick specific version for single selection
             DependencyTableModel.DependencyRow row = rowsToUpdate.getFirst();
             DependencyUpdateService service = DependencyUpdateService.getInstance(project);
-            String selectedVersion = VersionPickerDialog.pickVersion(project, row.dependency, service);
+            String selectedVersion = VersionPickerDialog.pickVersion(project, row.dependency(), service);
 
             if (selectedVersion != null) {
-                VersionReplacer.applyUpdate(project, row.dependency, selectedVersion);
+                VersionReplacer.applyUpdate(project, row.dependency(), selectedVersion);
                 // Commit document changes to PSI before refreshing
                 PsiDocumentManager.getInstance(project).commitAllDocuments();
                 refreshDependencies();
@@ -348,9 +347,9 @@ public class DependencyOverviewPanel extends JPanel {
             StringBuilder message = new StringBuilder("Update the following dependencies?\n\n");
             for (DependencyTableModel.DependencyRow row : rowsToUpdate) {
                 message.append(String.format("%s: %s → %s\n",
-                    row.dependency.artifact(),
-                    row.dependency.currentVersion(),
-                    row.latestVersion.version()));
+                    row.dependency().artifact(),
+                    row.dependency().currentVersion(),
+                    row.latestVersion().version()));
             }
 
             int result = Messages.showOkCancelDialog(
@@ -366,13 +365,13 @@ public class DependencyOverviewPanel extends JPanel {
                 // Sort updates in reverse order (bottom to top) to avoid position invalidation
                 List<DependencyTableModel.DependencyRow> sortedRows = rowsToUpdate.stream()
                         .sorted((r1, r2) -> {
-                            int offset1 = r1.dependency.psiElementPointer() != null &&
-                                         r1.dependency.psiElementPointer().getElement() != null
-                                    ? r1.dependency.psiElementPointer().getElement().getTextOffset()
+                            int offset1 = r1.dependency().psiElementPointer() != null &&
+                                         r1.dependency().psiElementPointer().getElement() != null
+                                    ? r1.dependency().psiElementPointer().getElement().getTextOffset()
                                     : 0;
-                            int offset2 = r2.dependency.psiElementPointer() != null &&
-                                         r2.dependency.psiElementPointer().getElement() != null
-                                    ? r2.dependency.psiElementPointer().getElement().getTextOffset()
+                            int offset2 = r2.dependency().psiElementPointer() != null &&
+                                         r2.dependency().psiElementPointer().getElement() != null
+                                    ? r2.dependency().psiElementPointer().getElement().getTextOffset()
                                     : 0;
                             return Integer.compare(offset2, offset1); // Descending order
                         })
@@ -381,7 +380,7 @@ public class DependencyOverviewPanel extends JPanel {
                 // Apply all updates in a single write action
                 WriteCommandAction.runWriteCommandAction(project, "Update Dependencies", null, () -> {
                     for (DependencyTableModel.DependencyRow row : sortedRows) {
-                        VersionReplacer.applyUpdateInWriteAction(project, row.dependency, row.latestVersion.version());
+                        VersionReplacer.applyUpdateInWriteAction(project, row.dependency(), row.latestVersion().version());
                     }
                 });
 
@@ -395,7 +394,7 @@ public class DependencyOverviewPanel extends JPanel {
     private void updateAllDependencies() {
         List<DependencyTableModel.DependencyRow> allRows = tableModel.getAllRows();
         List<DependencyTableModel.DependencyRow> outdatedRows = allRows.stream()
-            .filter(row -> row.latestVersion != null)
+            .filter(row -> row.latestVersion() != null)
             .toList();
 
         if (outdatedRows.isEmpty()) {
@@ -406,9 +405,9 @@ public class DependencyOverviewPanel extends JPanel {
         StringBuilder message = new StringBuilder("Update the following dependencies?\n\n");
         for (DependencyTableModel.DependencyRow row : outdatedRows) {
             message.append(String.format("%s: %s → %s\n",
-                row.dependency.artifact(),
-                row.dependency.currentVersion(),
-                row.latestVersion.version()));
+                row.dependency().artifact(),
+                row.dependency().currentVersion(),
+                row.latestVersion().version()));
         }
 
         int result = Messages.showOkCancelDialog(
@@ -424,13 +423,13 @@ public class DependencyOverviewPanel extends JPanel {
             // Sort updates in reverse order (bottom to top) to avoid position invalidation
             List<DependencyTableModel.DependencyRow> sortedRows = outdatedRows.stream()
                     .sorted((r1, r2) -> {
-                        int offset1 = r1.dependency.psiElementPointer() != null &&
-                                     r1.dependency.psiElementPointer().getElement() != null
-                                ? r1.dependency.psiElementPointer().getElement().getTextOffset()
+                        int offset1 = r1.dependency().psiElementPointer() != null &&
+                                     r1.dependency().psiElementPointer().getElement() != null
+                                ? r1.dependency().psiElementPointer().getElement().getTextOffset()
                                 : 0;
-                        int offset2 = r2.dependency.psiElementPointer() != null &&
-                                     r2.dependency.psiElementPointer().getElement() != null
-                                ? r2.dependency.psiElementPointer().getElement().getTextOffset()
+                        int offset2 = r2.dependency().psiElementPointer() != null &&
+                                     r2.dependency().psiElementPointer().getElement() != null
+                                ? r2.dependency().psiElementPointer().getElement().getTextOffset()
                                 : 0;
                         return Integer.compare(offset2, offset1); // Descending order
                     })
@@ -439,7 +438,7 @@ public class DependencyOverviewPanel extends JPanel {
             // Apply all updates in a single write action
             WriteCommandAction.runWriteCommandAction(project, "Update All Dependencies", null, () -> {
                 for (DependencyTableModel.DependencyRow row : sortedRows) {
-                    VersionReplacer.applyUpdateInWriteAction(project, row.dependency, row.latestVersion.version());
+                    VersionReplacer.applyUpdateInWriteAction(project, row.dependency(), row.latestVersion().version());
                 }
             });
 

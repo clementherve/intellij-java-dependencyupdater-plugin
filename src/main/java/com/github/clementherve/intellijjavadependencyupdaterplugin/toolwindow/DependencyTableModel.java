@@ -42,7 +42,13 @@ public class DependencyTableModel extends AbstractTableModel {
     public Object getValueAt(int rowIndex, int columnIndex) {
         DependencyRow row = rows.get(rowIndex);
         return switch (columnIndex) {
-            case 0 -> row.dependency.group() + ":" + row.dependency.artifact();
+            case 0 -> {
+                // For plugins (empty group), show just the plugin ID
+                if (row.dependency.group().isEmpty()) {
+                    yield row.dependency.artifact() + " (plugin)";
+                }
+                yield row.dependency.group() + ":" + row.dependency.artifact();
+            }
             case 1 -> row.dependency.currentVersion();
             case 2 -> row.latestVersion != null ? row.latestVersion.version() : "N/A";
             case 3 -> row.updateType != null ? row.updateType : "-";
@@ -125,22 +131,18 @@ public class DependencyTableModel extends AbstractTableModel {
     }
 
     /**
-     * Represents a row in the dependency table.
-     */
-    public static class DependencyRow {
-        public final DependencyInfo dependency;
-        public final VersionCandidate latestVersion;
-        public final String status;
-        public final String updateType;
-
-        public DependencyRow(@NotNull DependencyInfo dependency,
-                           @Nullable VersionCandidate latestVersion,
-                           @NotNull String status,
-                           @Nullable String updateType) {
-            this.dependency = dependency;
-            this.latestVersion = latestVersion;
-            this.status = status;
-            this.updateType = updateType;
+         * Represents a row in the dependency table.
+         */
+        public record DependencyRow(DependencyInfo dependency, VersionCandidate latestVersion, String status,
+                                    String updateType) {
+            public DependencyRow(@NotNull DependencyInfo dependency,
+                                 @Nullable VersionCandidate latestVersion,
+                                 @NotNull String status,
+                                 @Nullable String updateType) {
+                this.dependency = dependency;
+                this.latestVersion = latestVersion;
+                this.status = status;
+                this.updateType = updateType;
+            }
         }
-    }
 }

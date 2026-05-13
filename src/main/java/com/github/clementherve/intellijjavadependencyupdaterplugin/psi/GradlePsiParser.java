@@ -54,9 +54,16 @@ public class GradlePsiParser implements DependencyParser {
 
         for (GrMethodCall methodCall : PsiTreeUtil.findChildrenOfType(psiFile, GrMethodCall.class)) {
             try {
+                // Parse regular dependencies
                 DependencyInfo dependency = parseDependencyFromMethodCall(methodCall, psiFile);
                 if (dependency != null) {
                     dependencies.add(dependency);
+                }
+
+                // Parse plugin declarations
+                DependencyInfo plugin = parsePluginFromMethodCall(methodCall, psiFile);
+                if (plugin != null) {
+                    dependencies.add(plugin);
                 }
             } catch (com.intellij.openapi.progress.ProcessCanceledException e) {
                 // Rethrow - this is a control flow exception, not an error
@@ -67,6 +74,101 @@ public class GradlePsiParser implements DependencyParser {
         }
 
         return dependencies;
+    }
+
+    /**
+     * Attempts to parse a plugin declaration from the plugins block.
+     * Format: id 'plugin.id' version 'version'
+     *
+     * In Groovy, this syntax is a chained method call where 'version' is called on the result of 'id'.
+     * The PSI structure looks like: GrMethodCall(version) -> GrReferenceExpression(id(...))
+     */
+    private DependencyInfo parsePluginFromMethodCall(@NotNull GrMethodCall methodCall, @NotNull PsiFile psiFile) {
+        // Get the actual method name (not the full text which includes the chain)
+        PsiElement invokedExpr = methodCall.getInvokedExpression();
+        String methodName;
+
+        // Extract just the method name from the reference
+        if (invokedExpr instanceof org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression) {
+            methodName = ((org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression) invokedExpr).getReferenceName();
+        } else {
+            methodName = invokedExpr.getText();
+        }
+
+        // Check if this is a 'version' method call that wraps an 'id' call
+        if ("version".equals(methodName)) {
+            // This is the outer 'version' call in: id 'plugin.id' version 'version'
+            GrArgumentList versionArgList = methodCall.getArgumentList();
+            GrExpression[] versionArgs = versionArgList.getExpressionArguments();
+
+            if (versionArgs.length > 0 && versionArgs[0] instanceof GrLiteral) {
+                Object versionValue = ((GrLiteral) versionArgs[0]).getValue();
+
+                if (versionValue instanceof String) {
+                    String version = (String) versionValue;
+                    PsiElement versionElement = versionArgs[0];
+
+                    // The invoked expression should be a reference expression with a qualifier that is the 'id' call
+                    if (invokedExpr instanceof org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression) {
+                        org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression refExpr =
+                                (org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression) invokedExpr;
+                        GrExpression qualifier = refExpr.getQualifierExpression();
+
+                        if (qualifier instanceof GrMethodCall) {
+                            GrMethodCall idCall = (GrMethodCall) qualifier;
+                            PsiElement idInvoked = idCall.getInvokedExpression();
+                            String idMethodName = idInvoked.getText();
+
+                            if ("id".equals(idMethodName)) {
+                                // Check if inside plugins block
+                                boolean insidePluginsBlock = false;
+                                PsiElement ancestor = methodCall.getParent();
+                                while (ancestor != null) {
+                                    if (ancestor instanceof GrMethodCall) {
+                                        PsiElement ancestorMethod = ((GrMethodCall) ancestor).getInvokedExpression();
+                                        String ancestorName = ancestorMethod.getText();
+                                        if ("plugins".equals(ancestorName)) {
+                                            insidePluginsBlock = true;
+                                            break;
+                                        }
+                                    }
+                                    ancestor = ancestor.getParent();
+                                }
+
+                                if (!insidePluginsBlock) {
+                                    return null;
+                                }
+
+                                // Extract plugin ID from the 'id' call
+                                GrArgumentList idArgList = idCall.getArgumentList();
+                                GrExpression[] idArgs = idArgList.getExpressionArguments();
+
+                                if (idArgs.length > 0 && idArgs[0] instanceof GrLiteral) {
+                                    Object pluginIdValue = ((GrLiteral) idArgs[0]).getValue();
+                                    if (pluginIdValue instanceof String) {
+                                        String pluginId = (String) pluginIdValue;
+
+                                        SmartPsiElementPointer<PsiElement> pointer = SmartPointerManager.createPointer(versionElement);
+
+                                        return new DependencyInfo(
+                                                "",              // empty group for plugins
+                                                pluginId,        // artifact is the plugin ID
+                                                version,
+                                                "plugin",        // configuration name
+                                                pointer,
+                                                false,           // plugins don't use variables
+                                                null
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
