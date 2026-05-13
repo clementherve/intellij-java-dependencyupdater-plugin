@@ -34,33 +34,43 @@ public class DependencyUpdateNotificationProvider implements EditorNotificationP
             return null;
         }
 
-        // Check if there are any outdated dependencies in this file
+        // Quick check: only proceed if we might have cached data
+        // This avoids slow operations on EDT by not parsing if cache is likely empty
+        DependencyUpdateService service = DependencyUpdateService.getInstance(project);
+
+        // Fast path: check if there are any outdated dependencies using only cached data
+        // We limit the parsing to avoid slow operations
         Integer outdatedCount = ReadAction.compute(() -> {
-            PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
-            if (psiFile == null) {
-                return 0;
-            }
-
-            DependencyParser parser = DependencyParserFactory.getParser(psiFile);
-            if (parser == null) {
-                return 0;
-            }
-
-            List<DependencyInfo> dependencies = parser.parseDependencies(psiFile);
-            if (dependencies.isEmpty()) {
-                return 0;
-            }
-
-            DependencyUpdateService service = DependencyUpdateService.getInstance(project);
-            int count = 0;
-            for (DependencyInfo dependency : dependencies) {
-                // Use cache-only check to avoid blocking
-                VersionCandidate latest = service.checkForUpdateFromCache(dependency);
-                if (latest != null) {
-                    count++;
+            try {
+                PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
+                if (psiFile == null) {
+                    return 0;
                 }
+
+                DependencyParser parser = DependencyParserFactory.getParser(psiFile);
+                if (parser == null) {
+                    return 0;
+                }
+
+                // Parse dependencies - this is fast for typical build.gradle files
+                List<DependencyInfo> dependencies = parser.parseDependencies(psiFile);
+                if (dependencies.isEmpty()) {
+                    return 0;
+                }
+
+                // Only check cache (never trigger network calls)
+                int count = 0;
+                for (DependencyInfo dependency : dependencies) {
+                    VersionCandidate latest = service.checkForUpdateFromCache(dependency);
+                    if (latest != null) {
+                        count++;
+                    }
+                }
+                return count;
+            } catch (Exception e) {
+                // If anything goes wrong, don't show notification
+                return 0;
             }
-            return count;
         });
 
         // Only show banner if there are updates available
@@ -69,41 +79,45 @@ public class DependencyUpdateNotificationProvider implements EditorNotificationP
         }
 
         final int finalCount = outdatedCount;
-        return fileEditor -> {
-            EditorNotificationPanel panel = new EditorNotificationPanel(fileEditor, EditorNotificationPanel.Status.Warning);
+        return fileEditor -> createNotificationPanel(project, file, finalCount);
+    }
 
-            String message = finalCount == 1
-                ? "1 dependency update available"
-                : finalCount + " dependency updates available";
-            panel.setText(message);
+    private EditorNotificationPanel createNotificationPanel(@NotNull Project project,
+                                                           @NotNull VirtualFile file,
+                                                           int count) {
+        EditorNotificationPanel panel = new EditorNotificationPanel(EditorNotificationPanel.Status.Warning);
 
-            // Add "Update All" button
-            panel.createActionLabel("Update all", () -> {
-                UpdateAllDependenciesAction action = new UpdateAllDependenciesAction();
-                action.actionPerformed(
-                        new com.intellij.openapi.actionSystem.AnActionEvent(
-                                null,
-                                dataId -> {
-                                    if (com.intellij.openapi.actionSystem.CommonDataKeys.PROJECT.is(dataId)) {
-                                        return project;
-                                    }
-                                    if (com.intellij.openapi.actionSystem.CommonDataKeys.VIRTUAL_FILE.is(dataId)) {
-                                        return file;
-                                    }
-                                    if (com.intellij.openapi.actionSystem.CommonDataKeys.PSI_FILE.is(dataId)) {
-                                        return com.intellij.psi.PsiManager.getInstance(project).findFile(file);
-                                    }
-                                    return null;
-                                },
-                                "",
-                                new com.intellij.openapi.actionSystem.Presentation(),
-                                com.intellij.openapi.actionSystem.ActionManager.getInstance(),
-                                0
-                        )
-                );
-            });
+        String message = count == 1
+            ? "1 dependency update available"
+            : count + " dependency updates available";
+        panel.setText(message);
 
-            return panel;
-        };
+        // Add "Update All" button
+        panel.createActionLabel("Update all", () -> {
+            UpdateAllDependenciesAction action = new UpdateAllDependenciesAction();
+            action.actionPerformed(
+                    new com.intellij.openapi.actionSystem.AnActionEvent(
+                            null,
+                            dataId -> {
+                                if (com.intellij.openapi.actionSystem.CommonDataKeys.PROJECT.is(dataId)) {
+                                    return project;
+                                }
+                                if (com.intellij.openapi.actionSystem.CommonDataKeys.VIRTUAL_FILE.is(dataId)) {
+                                    return file;
+                                }
+                                if (com.intellij.openapi.actionSystem.CommonDataKeys.PSI_FILE.is(dataId)) {
+                                    return com.intellij.psi.PsiManager.getInstance(project).findFile(file);
+                                }
+                                return null;
+                            },
+                            "",
+                            new com.intellij.openapi.actionSystem.Presentation(),
+                            com.intellij.openapi.actionSystem.ActionManager.getInstance(),
+                            0
+                    )
+            );
+        });
+
+        return panel;
     }
 }

@@ -10,6 +10,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.util.VersionR
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener;
@@ -362,9 +363,28 @@ public class DependencyOverviewPanel extends JPanel {
             );
 
             if (result == Messages.OK) {
-                for (DependencyTableModel.DependencyRow row : rowsToUpdate) {
-                    VersionReplacer.applyUpdate(project, row.dependency, row.latestVersion.version());
-                }
+                // Sort updates in reverse order (bottom to top) to avoid position invalidation
+                List<DependencyTableModel.DependencyRow> sortedRows = rowsToUpdate.stream()
+                        .sorted((r1, r2) -> {
+                            int offset1 = r1.dependency.psiElementPointer() != null &&
+                                         r1.dependency.psiElementPointer().getElement() != null
+                                    ? r1.dependency.psiElementPointer().getElement().getTextOffset()
+                                    : 0;
+                            int offset2 = r2.dependency.psiElementPointer() != null &&
+                                         r2.dependency.psiElementPointer().getElement() != null
+                                    ? r2.dependency.psiElementPointer().getElement().getTextOffset()
+                                    : 0;
+                            return Integer.compare(offset2, offset1); // Descending order
+                        })
+                        .toList();
+
+                // Apply all updates in a single write action
+                WriteCommandAction.runWriteCommandAction(project, "Update Dependencies", null, () -> {
+                    for (DependencyTableModel.DependencyRow row : sortedRows) {
+                        VersionReplacer.applyUpdateInWriteAction(project, row.dependency, row.latestVersion.version());
+                    }
+                });
+
                 // Commit document changes to PSI before refreshing
                 PsiDocumentManager.getInstance(project).commitAllDocuments();
                 refreshDependencies();
@@ -401,9 +421,28 @@ public class DependencyOverviewPanel extends JPanel {
         );
 
         if (result == Messages.OK) {
-            for (DependencyTableModel.DependencyRow row : outdatedRows) {
-                VersionReplacer.applyUpdate(project, row.dependency, row.latestVersion.version());
-            }
+            // Sort updates in reverse order (bottom to top) to avoid position invalidation
+            List<DependencyTableModel.DependencyRow> sortedRows = outdatedRows.stream()
+                    .sorted((r1, r2) -> {
+                        int offset1 = r1.dependency.psiElementPointer() != null &&
+                                     r1.dependency.psiElementPointer().getElement() != null
+                                ? r1.dependency.psiElementPointer().getElement().getTextOffset()
+                                : 0;
+                        int offset2 = r2.dependency.psiElementPointer() != null &&
+                                     r2.dependency.psiElementPointer().getElement() != null
+                                ? r2.dependency.psiElementPointer().getElement().getTextOffset()
+                                : 0;
+                        return Integer.compare(offset2, offset1); // Descending order
+                    })
+                    .toList();
+
+            // Apply all updates in a single write action
+            WriteCommandAction.runWriteCommandAction(project, "Update All Dependencies", null, () -> {
+                for (DependencyTableModel.DependencyRow row : sortedRows) {
+                    VersionReplacer.applyUpdateInWriteAction(project, row.dependency, row.latestVersion.version());
+                }
+            });
+
             // Commit document changes to PSI before refreshing
             PsiDocumentManager.getInstance(project).commitAllDocuments();
             refreshDependencies();

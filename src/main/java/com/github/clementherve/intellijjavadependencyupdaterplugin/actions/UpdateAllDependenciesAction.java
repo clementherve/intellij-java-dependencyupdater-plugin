@@ -11,6 +11,7 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -19,10 +20,8 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Action to update all outdated dependencies in the current file.
@@ -111,14 +110,32 @@ public class UpdateAllDependenciesAction extends AnAction {
                 );
 
                 if (result == Messages.OK) {
-                    // Apply updates
-                    for (Map.Entry<DependencyInfo, VersionCandidate> entry : updates.entrySet()) {
-                        VersionReplacer.applyUpdate(
-                                project,
-                                entry.getKey(),
-                                entry.getValue().version()
-                        );
-                    }
+                    // Sort updates in reverse order (bottom to top) to avoid position invalidation
+                    List<Map.Entry<DependencyInfo, VersionCandidate>> sortedUpdates = updates.entrySet().stream()
+                            .sorted((e1, e2) -> {
+                                // Sort by text offset in descending order (bottom to top)
+                                int offset1 = e1.getKey().psiElementPointer() != null &&
+                                             e1.getKey().psiElementPointer().getElement() != null
+                                        ? e1.getKey().psiElementPointer().getElement().getTextOffset()
+                                        : 0;
+                                int offset2 = e2.getKey().psiElementPointer() != null &&
+                                             e2.getKey().psiElementPointer().getElement() != null
+                                        ? e2.getKey().psiElementPointer().getElement().getTextOffset()
+                                        : 0;
+                                return Integer.compare(offset2, offset1); // Descending order
+                            })
+                            .collect(Collectors.toList());
+
+                    // Apply all updates in a single write action
+                    WriteCommandAction.runWriteCommandAction(project, "Update All Dependencies", null, () -> {
+                        for (Map.Entry<DependencyInfo, VersionCandidate> entry : sortedUpdates) {
+                            VersionReplacer.applyUpdateInWriteAction(
+                                    project,
+                                    entry.getKey(),
+                                    entry.getValue().version()
+                            );
+                        }
+                    });
 
                     Messages.showInfoMessage(
                             project,
