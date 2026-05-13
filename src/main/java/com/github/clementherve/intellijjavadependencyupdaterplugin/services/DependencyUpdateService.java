@@ -45,6 +45,7 @@ public final class DependencyUpdateService {
 
     /**
      * Checks if an update is available for the given dependency.
+     * WARNING: This may make network calls - do NOT call from EDT or read actions!
      *
      * @param dependency the dependency to check
      * @return the best version candidate, or null if no update is available
@@ -68,6 +69,56 @@ public final class DependencyUpdateService {
             LOG.warn("Failed to check for update: " + dependency.getFullCoordinates(), e);
             return null;
         }
+    }
+
+    /**
+     * Checks cache only for available update - SAFE to call from EDT/read actions.
+     * Never makes network calls.
+     *
+     * @param dependency the dependency to check
+     * @return the best version candidate from cache, or null if not cached
+     */
+    @Nullable
+    public VersionCandidate checkForUpdateFromCache(@NotNull DependencyInfo dependency) {
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+
+        // Check cache only - never fetch from network
+        List<String> cachedVersions = cache.getVersions(
+            dependency.getGroup(),
+            dependency.getArtifact(),
+            settings.getCacheTtlMinutes()
+        );
+
+        if (cachedVersions == null) {
+            return null; // Not in cache
+        }
+
+        VersionPolicy policy = getFirstPolicy();
+        return policyEvaluator.findBestCandidate(
+            cachedVersions,
+            dependency.getCurrentVersion(),
+            policy,
+            getRepositorySource()
+        );
+    }
+
+    /**
+     * Schedules a background task to warm up the cache for a dependency.
+     * Safe to call from EDT/read actions.
+     *
+     * @param dependency the dependency to fetch versions for
+     */
+    public void scheduleCacheWarmup(@NotNull DependencyInfo dependency) {
+        LOG.debug("Scheduling cache warmup for dependency: " + dependency.getFullCoordinates());
+        // Schedule background fetch using application thread pool
+        com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            try {
+                getVersions(dependency.getGroup(), dependency.getArtifact());
+                // This will populate the cache, and next highlighting pass will show the marker
+            } catch (Exception e) {
+                LOG.debug("Background cache warmup failed for " + dependency.getFullCoordinates(), e);
+            }
+        });
     }
 
     /**

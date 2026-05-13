@@ -21,8 +21,6 @@ public class DependencyParserFactory {
 
         if ("build.gradle".equals(fileName)) {
             return new GradlePsiParser();
-        } else if ("build.gradle.kts".equals(fileName)) {
-            return new KotlinDslPsiParser();
         }
 
         return null;

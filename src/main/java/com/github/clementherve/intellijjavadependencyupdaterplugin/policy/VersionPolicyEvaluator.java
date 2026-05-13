@@ -40,7 +40,7 @@ public class VersionPolicyEvaluator {
         }
 
         // Sort in descending order (highest version first)
-        Collections.sort(candidates, Collections.reverseOrder());
+        candidates.sort(Collections.reverseOrder());
         return candidates;
     }
 
@@ -63,7 +63,7 @@ public class VersionPolicyEvaluator {
         SemanticVersion current = SemanticVersion.parse(currentVersion);
         if (current == null) {
             // If we can't parse the current version, return the highest candidate
-            return candidates.isEmpty() ? null : candidates.get(0);
+            return candidates.isEmpty() ? null : candidates.getFirst();
         }
 
         // Find the highest version that is greater than the current version

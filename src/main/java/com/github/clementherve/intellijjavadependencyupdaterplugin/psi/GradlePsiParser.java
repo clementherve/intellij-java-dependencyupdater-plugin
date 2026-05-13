@@ -33,6 +33,7 @@ public class GradlePsiParser implements DependencyParser {
         "annotationProcessor", "kapt"
     );
 
+    // fixme:
     private static final Pattern DEPENDENCY_PATTERN = Pattern.compile(
         "([^:]+):([^:]+):([^:]+)"  // group:artifact:version
     );
@@ -54,8 +55,11 @@ public class GradlePsiParser implements DependencyParser {
                 if (dependency != null) {
                     dependencies.add(dependency);
                 }
+            } catch (com.intellij.openapi.progress.ProcessCanceledException e) {
+                // Rethrow - this is a control flow exception, not an error
+                throw e;
             } catch (Exception e) {
-                LOG.warn("Failed to parse dependency from method call", e);
+                LOG.debug("Failed to parse dependency from method call", e);
             }
         }
 

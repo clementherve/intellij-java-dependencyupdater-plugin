@@ -1,0 +1,16 @@
+<idea-plugin>
+    <!-- Kotlin DSL support - loaded when Kotlin plugin is available -->
+    <extensions defaultExtensionNs="com.intellij">
+        <codeInsight.lineMarkerProvider
+                language="kotlin"
+                implementationClass="com.github.clementherve.intellijjavadependencyupdaterplugin.marker.DependencyLineMarkerProvider"/>
+        <annotator
+                language="kotlin"
+                implementationClass="com.github.clementherve.intellijjavadependencyupdaterplugin.annotator.DependencyAnnotator"/>
+        <intentionAction>
+            <language>kotlin</language>
+            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyIntention</className>
+            <category>Dependency Updater</category>
+        </intentionAction>
+    </extensions>
+</idea-plugin>

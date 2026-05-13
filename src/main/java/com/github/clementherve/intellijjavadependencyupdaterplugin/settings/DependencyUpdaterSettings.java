@@ -8,7 +8,6 @@ import com.intellij.ide.passwordSafe.PasswordSafe;
 import com.intellij.openapi.components.*;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.xmlb.XmlSerializerUtil;
-import com.intellij.util.xmlb.annotations.Transient;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,7 +25,7 @@ import java.util.List;
 @Service(Service.Level.PROJECT)
 public final class DependencyUpdaterSettings implements PersistentStateComponent<DependencyUpdaterSettings.State> {
 
-    private State myState = new State();
+    private final State state = new State();
     private final Project myProject;
 
     public DependencyUpdaterSettings(Project project) {
@@ -37,31 +36,30 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
         return project.getService(DependencyUpdaterSettings.class);
     }
 
-    @Nullable
     @Override
     public State getState() {
-        return myState;
+        return state;
     }
 
     @Override
     public void loadState(@NotNull State state) {
-        XmlSerializerUtil.copyBean(state, myState);
+        XmlSerializerUtil.copyBean(state, this.state);
     }
 
     public String getNexusBaseUrl() {
-        return myState.nexusBaseUrl;
+        return state.nexusBaseUrl;
     }
 
     public void setNexusBaseUrl(String nexusBaseUrl) {
-        myState.nexusBaseUrl = nexusBaseUrl;
+        state.nexusBaseUrl = nexusBaseUrl;
     }
 
     public String getNexusUsername() {
-        return myState.nexusUsername;
+        return state.nexusUsername;
     }
 
     public void setNexusUsername(String nexusUsername) {
-        myState.nexusUsername = nexusUsername;
+        state.nexusUsername = nexusUsername;
     }
 
     @Nullable
@@ -73,7 +71,7 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
 
     public void setNexusPassword(@Nullable String password) {
         CredentialAttributes attributes = createCredentialAttributes();
-        Credentials credentials = password != null ? new Credentials(myState.nexusUsername, password) : null;
+        Credentials credentials = password != null ? new Credentials(state.nexusUsername, password) : null;
         PasswordSafe.getInstance().set(attributes, credentials);
     }
 
@@ -85,56 +83,56 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
     }
 
     public boolean isFallbackToMavenCentral() {
-        return myState.fallbackToMavenCentral;
+        return state.fallbackToMavenCentral;
     }
 
     public void setFallbackToMavenCentral(boolean fallbackToMavenCentral) {
-        myState.fallbackToMavenCentral = fallbackToMavenCentral;
+        state.fallbackToMavenCentral = fallbackToMavenCentral;
     }
 
     public int getCacheTtlMinutes() {
-        return myState.cacheTtlMinutes;
+        return state.cacheTtlMinutes;
     }
 
     public void setCacheTtlMinutes(int cacheTtlMinutes) {
-        myState.cacheTtlMinutes = cacheTtlMinutes;
+        state.cacheTtlMinutes = cacheTtlMinutes;
     }
 
     @NotNull
     public List<VersionPolicy> getVersionPolicies() {
-        if (myState.versionPolicies == null || myState.versionPolicies.isEmpty()) {
+        if (state.versionPolicies == null || state.versionPolicies.isEmpty()) {
             return Collections.singletonList(VersionPolicy.createDefaultStablePolicy());
         }
-        return new ArrayList<>(myState.versionPolicies);
+        return new ArrayList<>(state.versionPolicies);
     }
 
     public void setVersionPolicies(@NotNull List<VersionPolicy> versionPolicies) {
-        myState.versionPolicies = new ArrayList<>(versionPolicies);
+        state.versionPolicies = new ArrayList<>(versionPolicies);
     }
 
     public boolean isShowGutterIcons() {
-        return myState.showGutterIcons;
+        return state.showGutterIcons;
     }
 
     public void setShowGutterIcons(boolean showGutterIcons) {
-        myState.showGutterIcons = showGutterIcons;
+        state.showGutterIcons = showGutterIcons;
     }
 
     public boolean isShowInlayHints() {
-        return myState.showInlayHints;
+        return state.showInlayHints;
     }
 
     public void setShowInlayHints(boolean showInlayHints) {
-        myState.showInlayHints = showInlayHints;
+        state.showInlayHints = showInlayHints;
     }
 
     @NotNull
     public TriggerMode getTriggerMode() {
-        return myState.triggerMode;
+        return state.triggerMode;
     }
 
     public void setTriggerMode(@NotNull TriggerMode triggerMode) {
-        myState.triggerMode = triggerMode;
+        state.triggerMode = triggerMode;
     }
 
     public enum TriggerMode {

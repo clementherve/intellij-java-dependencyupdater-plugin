@@ -18,7 +18,8 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>org.intellij.groovy</depends>
-    <depends>org.jetbrains.kotlin</depends>
+    <!-- Make Kotlin plugin optional for K2 compatibility -->
+    <depends optional="true" config-file="kotlin-support.xml">org.jetbrains.kotlin</depends>
 
     <resource-bundle>messages.DependencyUpdaterBundle</resource-bundle>
 
@@ -38,12 +39,16 @@
         <projectService
                 serviceImplementation="com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService"/>
 
-        <!-- Gutter icons -->
-        <codeInsight.lineMarkerProvider
+        <!-- Inline hints via annotator -->
+        <annotator
                 language="Groovy"
-                implementationClass="com.github.clementherve.intellijjavadependencyupdaterplugin.marker.DependencyLineMarkerProvider"/>
-        <codeInsight.lineMarkerProvider
-                language="kotlin"
-                implementationClass="com.github.clementherve.intellijjavadependencyupdaterplugin.marker.DependencyLineMarkerProvider"/>
+                implementationClass="com.github.clementherve.intellijjavadependencyupdaterplugin.annotator.DependencyAnnotator"/>
+
+        <!-- Intentions -->
+        <intentionAction>
+            <language>Groovy</language>
+            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyIntention</className>
+            <category>Dependency Updater</category>
+        </intentionAction>
     </extensions>
 </idea-plugin>
