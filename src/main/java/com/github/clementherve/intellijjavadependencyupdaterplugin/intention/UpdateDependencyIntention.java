@@ -24,6 +24,12 @@ import java.util.List;
 public class UpdateDependencyIntention extends PsiElementBaseIntentionAction implements IntentionAction {
 
     @Override
+    public boolean startInWriteAction() {
+        // Return true so IntelliJ manages the write action for us
+        return true;
+    }
+
+    @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element)
             throws IncorrectOperationException {
         PsiFile file = element.getContainingFile();
@@ -47,8 +53,8 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
             return;
         }
 
-        // Apply the update
-        VersionReplacer.applyUpdate(project, dependency, candidate.getVersion());
+        // Apply the update (we're already in a write action due to startInWriteAction())
+        VersionReplacer.applyUpdateInWriteAction(project, dependency, candidate.getVersion());
     }
 
     @Override

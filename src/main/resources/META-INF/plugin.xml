@@ -44,6 +44,21 @@
                 language="Groovy"
                 implementationClass="com.github.clementherve.intellijjavadependencyupdaterplugin.annotator.DependencyAnnotator"/>
 
+        <!-- Editor notification banner -->
+        <editorNotificationProvider
+                implementation="com.github.clementherve.intellijjavadependencyupdaterplugin.ui.DependencyUpdateNotificationProvider"/>
+
+        <!-- Actions -->
+        <action id="DependencyUpdater.UpdateAll"
+                class="com.github.clementherve.intellijjavadependencyupdaterplugin.actions.UpdateAllDependenciesAction"
+                text="Update All Dependencies"
+                description="Update all outdated dependencies to their latest versions"
+                icon="AllIcons.Actions.Refresh">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+            <add-to-group group-id="MainToolBar" anchor="last"/>
+        </action>
+
         <!-- Intentions -->
         <intentionAction>
             <language>Groovy</language>

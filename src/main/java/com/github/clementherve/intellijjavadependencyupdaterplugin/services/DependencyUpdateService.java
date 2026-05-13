@@ -11,6 +11,9 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.Ve
 import com.github.clementherve.intellijjavadependencyupdaterplugin.settings.DependencyUpdaterSettings;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -136,13 +139,18 @@ public final class DependencyUpdateService {
      */
     public void scheduleCacheWarmup(@NotNull DependencyInfo dependency) {
         LOG.debug("Scheduling cache warmup for dependency: " + dependency.getFullCoordinates());
-        // Schedule background fetch using application thread pool
-        com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread(() -> {
-            try {
-                getVersions(dependency.getGroup(), dependency.getArtifact());
-                // This will populate the cache, and next highlighting pass will show the marker
-            } catch (Exception e) {
-                LOG.debug("Background cache warmup failed for " + dependency.getFullCoordinates(), e);
+
+        // Show progress in the background
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Fetching versions for " + dependency.getArtifact(), false) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                    indicator.setText("Fetching versions from repository...");
+                    getVersions(dependency.getGroup(), dependency.getArtifact());
+                    // This will populate the cache, and next highlighting pass will show the marker
+                } catch (Exception e) {
+                    LOG.debug("Background cache warmup failed for " + dependency.getFullCoordinates(), e);
+                }
             }
         });
     }

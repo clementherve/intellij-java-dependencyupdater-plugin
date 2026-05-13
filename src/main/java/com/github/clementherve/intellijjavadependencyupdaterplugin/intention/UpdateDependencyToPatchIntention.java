@@ -26,6 +26,11 @@ import java.util.List;
 public class UpdateDependencyToPatchIntention extends PsiElementBaseIntentionAction implements IntentionAction {
 
     @Override
+    public boolean startInWriteAction() {
+        return true;
+    }
+
+    @Override
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element)
             throws IncorrectOperationException {
         PsiFile file = element.getContainingFile();
@@ -43,7 +48,7 @@ public class UpdateDependencyToPatchIntention extends PsiElementBaseIntentionAct
             return;
         }
 
-        VersionReplacer.applyUpdate(project, dependency, candidate.getVersion());
+        VersionReplacer.applyUpdateInWriteAction(project, dependency, candidate.getVersion());
     }
 
     @Override

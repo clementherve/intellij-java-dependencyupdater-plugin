@@ -110,7 +110,7 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
         DependencyInfo firstDependency = dependencies.getFirst();
         assertEquals("com.google.guava", firstDependency.getGroup());
         assertEquals("guava", firstDependency.getArtifact());
-//        assertTrue(firstDependency.isVersionVariable());
+        assertTrue(firstDependency.isVersionVariable()); // todo: investigate why it's false
         assertEquals("guavaVersion", firstDependency.getVariableName());
         assertEquals("31.1-jre", firstDependency.getCurrentVersion());
 
