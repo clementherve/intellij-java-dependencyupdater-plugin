@@ -53,14 +53,10 @@
                 language="Groovy"
                 implementationClass="com.github.clementherve.intellijjavadependencyupdaterplugin.annotator.DependencyAnnotator"/>
 
-        <!-- Editor notification banner -->
-        <editorNotificationProvider
-                implementation="com.github.clementherve.intellijjavadependencyupdaterplugin.ui.DependencyUpdateNotificationProvider"/>
-
         <!-- Tool window -->
-        <toolWindow id="Dependency Overview"
+        <toolWindow id="Gradle Dependency Updater"
                     anchor="bottom"
-                    icon="AllIcons.Toolwindows.ToolWindowBuild"
+                    icon="AllIcons.Toolwindows.Dependencies"
                     factoryClass="com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow.DependencyOverviewToolWindowFactory"/>
 
         <!-- Actions -->
@@ -69,7 +65,6 @@
                 text="Update All Dependencies"
                 description="Update all outdated dependencies to their latest versions"
                 icon="AllIcons.Actions.Refresh">
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
             <add-to-group group-id="MainToolBar" anchor="last"/>
         </action>

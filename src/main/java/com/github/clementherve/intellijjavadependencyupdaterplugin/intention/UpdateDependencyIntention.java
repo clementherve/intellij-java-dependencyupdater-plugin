@@ -8,6 +8,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.services.Depe
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.VersionReplacer;
 import com.intellij.codeInsight.intention.IntentionAction;
+import com.intellij.codeInsight.intention.PriorityAction;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
@@ -22,11 +23,19 @@ import java.util.List;
 /**
  * Intention action to update a dependency to the latest version.
  */
-public class UpdateDependencyIntention extends PsiElementBaseIntentionAction implements IntentionAction {
+public class UpdateDependencyIntention extends PsiElementBaseIntentionAction implements IntentionAction, PriorityAction {
+
+    private VersionCandidate cachedCandidate;
+    private DependencyInfo cachedDependency;
+
+    @NotNull
+    @Override
+    public Priority getPriority() {
+        return Priority.HIGH;
+    }
 
     @Override
     public boolean startInWriteAction() {
-        // Return true so IntelliJ manages the write action for us
         return true;
     }
 
@@ -44,12 +53,14 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
             return;
         }
 
-        // Get the best version candidate
+        // Get the best version candidate (use cached if available)
         DependencyUpdateService service = DependencyUpdateService.getInstance(project);
-        VersionCandidate candidate = service.checkForUpdateFromCache(dependency);
+        VersionCandidate candidate = cachedCandidate != null ? cachedCandidate
+                : service.checkForUpdateFromCache(dependency);
 
         if (candidate == null) {
-            // Try fetching in background and notify user
+            // Fetch in background - this will warm the cache
+            // The user will need to invoke the intention again after cache is warm
             service.scheduleCacheWarmup(dependency);
             return;
         }
@@ -62,23 +73,34 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
     public boolean isAvailable(@NotNull Project project, Editor editor, @NotNull PsiElement element) {
         PsiFile file = element.getContainingFile();
         if (file == null) {
+            cachedCandidate = null;
+            cachedDependency = null;
             return false;
         }
 
         if (!SupportedFilesUtil.isSupportedFile(file.getName())) {
+            cachedCandidate = null;
+            cachedDependency = null;
             return false;
         }
 
-        // Check if there's a dependency at cursor with available update
+        // Check if there's a dependency at cursor
         DependencyInfo dependency = findDependencyAtElement(file, element);
         if (dependency == null) {
+            cachedCandidate = null;
+            cachedDependency = null;
             return false;
         }
 
         DependencyUpdateService service = DependencyUpdateService.getInstance(project);
         VersionCandidate candidate = service.checkForUpdateFromCache(dependency);
 
-        return candidate != null;
+        // Cache for getText() method
+        cachedDependency = dependency;
+        cachedCandidate = candidate;
+
+        // Show intention even if cache is empty - we'll fetch in background
+        return true;
     }
 
     @Nls
@@ -91,7 +113,16 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
     @NotNull
     @Override
     public String getText() {
-        return "Update dependency to latest version";
+        if (cachedDependency != null) {
+            if (cachedCandidate != null) {
+                return String.format("Update '%s' to %s",
+                        cachedDependency.artifact(),
+                        cachedCandidate.version());
+            } else {
+                return String.format("Check for updates to '%s'", cachedDependency.artifact());
+            }
+        }
+        return "Check for dependency updates";
     }
 
     /**

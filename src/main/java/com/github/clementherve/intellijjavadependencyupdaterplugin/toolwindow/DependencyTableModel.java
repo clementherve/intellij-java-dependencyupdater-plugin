@@ -19,7 +19,6 @@ public class DependencyTableModel extends AbstractTableModel {
         "Current Version",
         "Latest Version",
         "Update Type",
-        "Status"
     };
 
     private final List<DependencyRow> rows = new ArrayList<>();
