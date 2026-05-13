@@ -103,6 +103,32 @@ public final class DependencyUpdateService {
     }
 
     /**
+     * Gets all version candidates from cache - SAFE to call from EDT/read actions.
+     * Never makes network calls.
+     *
+     * @param dependency the dependency to check
+     * @return list of all version candidates from cache (sorted descending), or empty list if not cached
+     */
+    @NotNull
+    public List<VersionCandidate> getAllCandidatesFromCache(@NotNull DependencyInfo dependency) {
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+
+        // Check cache only - never fetch from network
+        List<String> cachedVersions = cache.getVersions(
+            dependency.getGroup(),
+            dependency.getArtifact(),
+            settings.getCacheTtlMinutes()
+        );
+
+        if (cachedVersions == null) {
+            return List.of(); // Not in cache
+        }
+
+        VersionPolicy policy = getFirstPolicy();
+        return policyEvaluator.evaluate(cachedVersions, policy, getRepositorySource());
+    }
+
+    /**
      * Schedules a background task to warm up the cache for a dependency.
      * Safe to call from EDT/read actions.
      *

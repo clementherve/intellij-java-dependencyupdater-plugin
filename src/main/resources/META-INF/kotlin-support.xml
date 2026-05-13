@@ -12,5 +12,20 @@
             <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyIntention</className>
             <category>Dependency Updater</category>
         </intentionAction>
+        <intentionAction>
+            <language>kotlin</language>
+            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyToPatchIntention</className>
+            <category>Dependency Updater</category>
+        </intentionAction>
+        <intentionAction>
+            <language>kotlin</language>
+            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyToMinorIntention</className>
+            <category>Dependency Updater</category>
+        </intentionAction>
+        <intentionAction>
+            <language>kotlin</language>
+            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyToMajorIntention</className>
+            <category>Dependency Updater</category>
+        </intentionAction>
     </extensions>
 </idea-plugin>
