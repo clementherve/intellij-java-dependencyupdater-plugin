@@ -21,6 +21,7 @@
 
     <!-- Startup activity for cache warming -->
     <extensions defaultExtensionNs="com.intellij">
+        <iconMapper mappingFile="GradleDependencyUpdaterIconMappings.json"/>
         <postStartupActivity implementation="com.github.clementherve.intellijjavadependencyupdaterplugin.startup.DependencyStartupActivity"/>
     </extensions>
 
@@ -37,14 +38,6 @@
                 instance="com.github.clementherve.intellijjavadependencyupdaterplugin.settings.DependencyUpdaterConfigurable"
                 id="tools.dependency.updater"
                 displayName="Dependency Updater"/>
-        <projectService
-                serviceImplementation="com.github.clementherve.intellijjavadependencyupdaterplugin.settings.DependencyUpdaterSettings"/>
-
-        <!-- Services -->
-        <projectService
-                serviceImplementation="com.github.clementherve.intellijjavadependencyupdaterplugin.cache.VersionCache"/>
-        <projectService
-                serviceImplementation="com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService"/>
 
         <!-- Inline hints via annotator -->
         <annotator
@@ -54,39 +47,29 @@
         <!-- Tool window -->
         <toolWindow id="Gradle Dependency Updater"
                     anchor="bottom"
-                    icon="/dependency-icon.svg"
+                    icon="/icons/toolWindow.svg"
                     factoryClass="com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow.DependencyOverviewToolWindowFactory"/>
-
-        <!-- Actions -->
-        <action id="DependencyUpdater.UpdateAll"
-                class="com.github.clementherve.intellijjavadependencyupdaterplugin.actions.UpdateAllDependenciesAction"
-                text="Update All Dependencies"
-                description="Update all outdated dependencies to their latest versions"
-                icon="AllIcons.Actions.Refresh">
-            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
-            <add-to-group group-id="MainToolBar" anchor="last"/>
-        </action>
 
         <!-- Intentions -->
         <intentionAction>
             <language>Groovy</language>
             <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyIntention</className>
-            <category>Dependency Updater</category>
+            <category>Dependency updater</category>
         </intentionAction>
         <intentionAction>
             <language>Groovy</language>
             <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyToPatchIntention</className>
-            <category>Dependency Updater</category>
+            <category>Dependency updater</category>
         </intentionAction>
         <intentionAction>
             <language>Groovy</language>
             <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyToMinorIntention</className>
-            <category>Dependency Updater</category>
+            <category>Dependency updater</category>
         </intentionAction>
         <intentionAction>
             <language>Groovy</language>
             <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyToMajorIntention</className>
-            <category>Dependency Updater</category>
+            <category>Dependency updater</category>
         </intentionAction>
     </extensions>
 </idea-plugin>
