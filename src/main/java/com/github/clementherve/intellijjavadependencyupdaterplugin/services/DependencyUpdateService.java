@@ -178,6 +178,7 @@ public final class DependencyUpdateService {
             return cachedVersions;
         }
 
+
         List<String> versions = fetchVersionsFromRepositories(group, artifact);
 
         if (!versions.isEmpty()) {
@@ -274,5 +275,24 @@ public final class DependencyUpdateService {
      */
     public void invalidateAllCache() {
         cache.invalidateAll();
+    }
+
+    public VersionCandidate forceCheckForUpdate(final DependencyInfo dependency) throws IOException {
+
+        invalidateCache(dependency.group(), dependency.artifact());
+
+        final List<String> versions = fetchVersionsAndSaveThemToCache(dependency.group(), dependency.artifact());
+
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+        VersionPolicy policy = getFirstPolicy();
+        String excludeRegex = settings.getVersionFilterRegex();
+
+        return policyEvaluator.findBestCandidate(
+                versions,
+                dependency.currentVersion(),
+                policy,
+                getRepositorySource(dependency.group()),
+                excludeRegex
+        );
     }
 }

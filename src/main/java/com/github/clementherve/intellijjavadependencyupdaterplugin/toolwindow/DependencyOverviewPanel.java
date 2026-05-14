@@ -79,7 +79,7 @@ public class DependencyOverviewPanel extends JPanel {
         add(contentPanel, BorderLayout.CENTER);
 
         showLoading();
-        refreshDependencies();
+        refreshDependencies(false);
     }
 
     private void setupFileListener() {
@@ -89,7 +89,7 @@ public class DependencyOverviewPanel extends JPanel {
             public void beforeDocumentSaving(@NotNull Document document) {
                 VirtualFile file = FileDocumentManager.getInstance().getFile(document);
                 if (file != null && SupportedFilesUtil.isSupportedFile(file.getName())) {
-                    SwingUtilities.invokeLater(() -> refreshDependencies());
+                    SwingUtilities.invokeLater(() -> refreshDependencies(false));
                 }
             }
         });
@@ -140,7 +140,7 @@ public class DependencyOverviewPanel extends JPanel {
         add(toolbar.getComponent(), BorderLayout.NORTH);
     }
 
-    private void refreshDependencies() {
+    private void refreshDependencies(boolean forceRefresh) {
         showLoading();
         loadingLabel.setText(DependencyUpdaterBundle.message("toolWindow.scanning"));
 
@@ -199,7 +199,12 @@ public class DependencyOverviewPanel extends JPanel {
                             String checkingText = DependencyUpdaterBundle.message("toolWindow.checkingDependency", dependency.artifact());
                             indicator.setText2(checkingText);
                             SwingUtilities.invokeLater(() -> loadingLabel.setText(checkingText + "..."));
-                            VersionCandidate latest = service.checkForUpdate(dependency);
+                            VersionCandidate latest;
+                            if (forceRefresh) {
+                                latest = service.forceCheckForUpdate(dependency);
+                            } else {
+                                latest = service.checkForUpdate(dependency);
+                            }
                             results.add(new DependencyWithVersion(dependency, latest));
                         }
 
@@ -296,7 +301,7 @@ public class DependencyOverviewPanel extends JPanel {
             if (selectedVersion != null) {
                 VersionReplacer.applyUpdate(project, row.dependency(), selectedVersion);
                 PsiDocumentManager.getInstance(project).commitAllDocuments();
-                refreshDependencies();
+                refreshDependencies(false);
             }
         } else if (pickVersion) {
             Messages.showInfoMessage(project, DependencyUpdaterBundle.message("toolWindow.dialog.singleSelectionOnly"), DependencyUpdaterBundle.message("toolWindow.dialog.pickVersionTitle"));
@@ -322,7 +327,7 @@ public class DependencyOverviewPanel extends JPanel {
                 });
 
                 PsiDocumentManager.getInstance(project).commitAllDocuments();
-                refreshDependencies();
+                refreshDependencies(false);
             }
         }
     }
@@ -370,7 +375,7 @@ public class DependencyOverviewPanel extends JPanel {
             });
 
             PsiDocumentManager.getInstance(project).commitAllDocuments();
-            refreshDependencies();
+            refreshDependencies(false);
         }
     }
 
@@ -385,7 +390,7 @@ public class DependencyOverviewPanel extends JPanel {
 
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
-            refreshDependencies();
+            refreshDependencies(true);
         }
     }
 
