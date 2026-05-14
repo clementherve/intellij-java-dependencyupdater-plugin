@@ -10,6 +10,7 @@ import com.intellij.ui.components.JBPasswordField;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -106,7 +107,10 @@ public class DependencyUpdaterSettingsPanel {
 
         DependencyUpdaterSettings.TriggerMode selectedMode =
                 (DependencyUpdaterSettings.TriggerMode) triggerModeComboBox.getSelectedItem();
-        if (selectedMode != null && selectedMode != settings.getTriggerMode()) return true;
+
+        if (selectedMode != null && selectedMode != settings.getTriggerMode()) {
+            return true;
+        }
 
         return !versionFilterRegexField.getText().equals(settings.getVersionFilterRegex());
     }
@@ -120,7 +124,7 @@ public class DependencyUpdaterSettingsPanel {
         String password = new String(nexusPasswordField.getPassword());
         if (!password.isEmpty()) {
             settings.setNexusPassword(password);
-            cachedPassword = password;  // Update cache after saving
+            cachedPassword = password;
         }
 
         settings.setFallbackToMavenCentral(fallbackToMavenCentralCheckBox.isSelected());
@@ -144,10 +148,10 @@ public class DependencyUpdaterSettingsPanel {
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             String password = settings.getNexusPassword();
-            String cached = password != null ? password : "";
+            String cachedPasswordUpdated = StringUtils.trimToEmpty(password);
             SwingUtilities.invokeLater(() -> {
-                cachedPassword = cached;
-                nexusPasswordField.setText(cached);
+                cachedPassword = cachedPasswordUpdated;
+                nexusPasswordField.setText(cachedPasswordUpdated);
             });
         });
 

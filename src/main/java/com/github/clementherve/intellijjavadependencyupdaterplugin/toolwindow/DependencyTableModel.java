@@ -22,6 +22,7 @@ public class DependencyTableModel extends AbstractTableModel {
     private static final int COLUMN_COUNT = 5;
     private static final String UP_TO_DATE = "Up to date";
     private static final String OUTDATED = "Outdated";
+    private static final String NO_VALUE = "-";
 
     private final List<DependencyRow> rows = new ArrayList<>();
 
@@ -51,16 +52,20 @@ public class DependencyTableModel extends AbstractTableModel {
     public Object getValueAt(int rowIndex, int columnIndex) {
         DependencyRow row = rows.get(rowIndex);
         final DependencyInfo dependency = row.dependency();
+
         return switch (columnIndex) {
             case 0 -> {
-                if (StringUtils.isBlank(dependency.group())) {
-                    yield dependency.artifact();
+                final String artifact = dependency.artifact();
+                final String group = dependency.group();
+                if (StringUtils.isBlank(group)) {
+                    yield artifact;
                 }
-                yield dependency.group() + ":" + dependency.artifact();
+
+                yield String.format("%s:%s", group, artifact);
             }
             case 1 -> dependency.currentVersion();
-            case 2 -> row.latestVersion() != null ? row.latestVersion().version() : "-";
-            case 3 -> row.updateType() != null ? row.updateType() : "-";
+            case 2 -> row.latestVersion() != null ? row.latestVersion().version() : NO_VALUE;
+            case 3 -> row.updateType() != null ? row.updateType() : NO_VALUE;
             case 4 -> dependency.group().isEmpty()
                     ? DependencyUpdaterBundle.message("toolWindow.type.plugin")
                     : DependencyUpdaterBundle.message("toolWindow.type.dependency");

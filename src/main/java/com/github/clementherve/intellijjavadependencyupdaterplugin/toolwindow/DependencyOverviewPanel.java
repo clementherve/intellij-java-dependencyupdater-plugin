@@ -376,7 +376,11 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class RefreshAction extends AnAction {
         RefreshAction() {
-            super(DependencyUpdaterBundle.message("toolWindow.refresh"), DependencyUpdaterBundle.message("toolWindow.action.refresh.description"), AllIcons.Actions.Refresh);
+            super(
+                    DependencyUpdaterBundle.message("toolWindow.refresh"),
+                    DependencyUpdaterBundle.message("toolWindow.action.refresh.description"),
+                    AllIcons.Actions.Refresh
+            );
         }
 
         @Override
@@ -387,7 +391,11 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class UpdateAllAction extends AnAction {
         UpdateAllAction() {
-            super(DependencyUpdaterBundle.message("toolWindow.updateAll"), DependencyUpdaterBundle.message("toolWindow.action.updateAll.description"), AllIcons.Actions.Selectall);
+            super(
+                    DependencyUpdaterBundle.message("toolWindow.updateAll"),
+                    DependencyUpdaterBundle.message("toolWindow.action.updateAll.description"),
+                    AllIcons.Diff.MagicResolve
+            );
         }
 
         @Override
@@ -398,7 +406,11 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class UpdateSelectedAction extends AnAction {
         UpdateSelectedAction() {
-            super(DependencyUpdaterBundle.message("toolWindow.updateSelected"), DependencyUpdaterBundle.message("toolWindow.action.updateSelected.description"), AllIcons.Actions.Upload);
+            super(
+                    DependencyUpdaterBundle.message("toolWindow.updateSelected"),
+                    DependencyUpdaterBundle.message("toolWindow.action.updateSelected.description"),
+                    AllIcons.Actions.Edit
+            );
         }
 
         @Override
@@ -409,7 +421,11 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class PickVersionAction extends AnAction {
         PickVersionAction() {
-            super(DependencyUpdaterBundle.message("toolWindow.pickVersion"), DependencyUpdaterBundle.message("toolWindow.action.pickVersion.description"), AllIcons.Actions.Find);
+            super(
+                    DependencyUpdaterBundle.message("toolWindow.pickVersion"),
+                    DependencyUpdaterBundle.message("toolWindow.action.pickVersion.description"),
+                    AllIcons.Actions.ShortcutFilter
+            );
         }
 
         @Override
