@@ -91,6 +91,7 @@ public record DependencyInfo(String group, String artifact, String currentVersio
         return Objects.hash(group, artifact, currentVersion, configurationName);
     }
 
+    @NotNull
     @Override
     public String toString() {
         return "DependencyInfo{" +

@@ -135,7 +135,7 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
         assertEquals(4, plugins.size());
 
         // Test Spring Boot plugin
-        DependencyInfo springBoot = plugins.get(0);
+        DependencyInfo springBoot = plugins.getFirst();
         assertEquals("", springBoot.group()); // Empty group for plugins
         assertEquals("org.springframework.boot", springBoot.artifact());
         assertEquals("3.5.6", springBoot.currentVersion());

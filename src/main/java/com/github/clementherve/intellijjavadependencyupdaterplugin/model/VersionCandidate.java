@@ -64,6 +64,7 @@ public record VersionCandidate(String version, SemanticVersion semanticVersion,
         return Objects.hash(version, repositorySource);
     }
 
+    @NotNull
     @Override
     public String toString() {
         return version + " (" + repositorySource + ")";

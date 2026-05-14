@@ -186,17 +186,6 @@ public class SemanticVersionTest {
 
     @Test
     public void test_sorting_versions() {
-        List<String> versionStrings = Arrays.asList(
-            "2.0.0",
-            "1.0.0-alpha",
-            "1.0.0-beta",
-            "1.0.0",
-            "1.10.0",
-            "1.5.0",
-            "1.0.0-rc",
-            "3.0.0"
-        );
-
         List<SemanticVersion> versions = Arrays.asList(
             SemanticVersion.parse("2.0.0"),
             SemanticVersion.parse("1.0.0-alpha"),

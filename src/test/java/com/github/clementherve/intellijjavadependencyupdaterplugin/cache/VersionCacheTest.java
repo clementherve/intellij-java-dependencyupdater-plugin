@@ -95,8 +95,8 @@ public class VersionCacheTest {
 
         assertNotNull(versions1);
         assertNotNull(versions2);
-        assertEquals("1.0.0", versions1.get(0));
-        assertEquals("2.0.0", versions2.get(0));
+        assertEquals("1.0.0", versions1.getFirst());
+        assertEquals("2.0.0", versions2.getFirst());
     }
 
     @Test

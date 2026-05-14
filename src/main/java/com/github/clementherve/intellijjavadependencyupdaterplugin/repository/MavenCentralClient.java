@@ -1,9 +1,5 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.repository;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.util.io.HttpRequests;
 import org.jetbrains.annotations.NotNull;

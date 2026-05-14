@@ -46,6 +46,7 @@ public record VersionPolicy(String name, List<String> includePatterns, List<Stri
         return new VersionPolicy("Stable only", includePatterns, excludePatterns);
     }
 
+    @NotNull
     @Override
     public String toString() {
         return "VersionPolicy{" +

@@ -3,6 +3,7 @@ package com.github.clementherve.intellijjavadependencyupdaterplugin.psi;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.DependencyInfo;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.SmartPointerManager;
@@ -14,6 +15,7 @@ import org.jetbrains.plugins.groovy.lang.psi.api.statements.arguments.GrArgument
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.arguments.GrNamedArgument;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrExpression;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrMethodCall;
+import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.literals.GrLiteral;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.literals.GrString;
 
@@ -65,7 +67,7 @@ public class GradlePsiParser implements DependencyParser {
                 if (plugin != null) {
                     dependencies.add(plugin);
                 }
-            } catch (com.intellij.openapi.progress.ProcessCanceledException e) {
+            } catch (ProcessCanceledException e) {
                 // Rethrow - this is a control flow exception, not an error
                 throw e;
             } catch (Exception e) {
@@ -79,7 +81,7 @@ public class GradlePsiParser implements DependencyParser {
     /**
      * Attempts to parse a plugin declaration from the plugins block.
      * Format: id 'plugin.id' version 'version'
-     *
+     * <p>
      * In Groovy, this syntax is a chained method call where 'version' is called on the result of 'id'.
      * The PSI structure looks like: GrMethodCall(version) -> GrReferenceExpression(id(...))
      */
@@ -89,8 +91,8 @@ public class GradlePsiParser implements DependencyParser {
         String methodName;
 
         // Extract just the method name from the reference
-        if (invokedExpr instanceof org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression) {
-            methodName = ((org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression) invokedExpr).getReferenceName();
+        if (invokedExpr instanceof GrReferenceExpression) {
+            methodName = ((GrReferenceExpression) invokedExpr).getReferenceName();
         } else {
             methodName = invokedExpr.getText();
         }
@@ -104,18 +106,14 @@ public class GradlePsiParser implements DependencyParser {
             if (versionArgs.length > 0 && versionArgs[0] instanceof GrLiteral) {
                 Object versionValue = ((GrLiteral) versionArgs[0]).getValue();
 
-                if (versionValue instanceof String) {
-                    String version = (String) versionValue;
+                if (versionValue instanceof final String version) {
                     PsiElement versionElement = versionArgs[0];
 
                     // The invoked expression should be a reference expression with a qualifier that is the 'id' call
-                    if (invokedExpr instanceof org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression) {
-                        org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression refExpr =
-                                (org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression) invokedExpr;
+                    if (invokedExpr instanceof final GrReferenceExpression refExpr) {
                         GrExpression qualifier = refExpr.getQualifierExpression();
 
-                        if (qualifier instanceof GrMethodCall) {
-                            GrMethodCall idCall = (GrMethodCall) qualifier;
+                        if (qualifier instanceof final GrMethodCall idCall) {
                             PsiElement idInvoked = idCall.getInvokedExpression();
                             String idMethodName = idInvoked.getText();
 
@@ -145,8 +143,7 @@ public class GradlePsiParser implements DependencyParser {
 
                                 if (idArgs.length > 0 && idArgs[0] instanceof GrLiteral) {
                                     Object pluginIdValue = ((GrLiteral) idArgs[0]).getValue();
-                                    if (pluginIdValue instanceof String) {
-                                        String pluginId = (String) pluginIdValue;
+                                    if (pluginIdValue instanceof final String pluginId) {
 
                                         SmartPsiElementPointer<PsiElement> pointer = SmartPointerManager.createPointer(versionElement);
 
@@ -282,19 +279,15 @@ public class GradlePsiParser implements DependencyParser {
         String artifact = matcher.group(2);
         String version = matcher.group(3);
 
-        // Check if version is a variable reference (starts with $)
         boolean isVersionVariable = version.startsWith("$");
         String variableName = null;
         String resolvedVersion = version;
 
         if (isVersionVariable) {
             variableName = version.substring(1);
-            // Resolve the variable to its actual value
             String resolved = resolveVariable(variableName, psiFile);
             if (resolved != null) {
                 resolvedVersion = resolved;
-            } else {
-                LOGGER.debug("Could not resolve variable: " + variableName);
             }
         }
 
@@ -341,6 +334,10 @@ public class GradlePsiParser implements DependencyParser {
                             version = (String) value;
                             versionElement = expression;
                             break;
+                        case null:
+                            break;
+                        default:
+                            throw new IllegalStateException("Unexpected value: " + argName);
                     }
                 }
             }
@@ -361,8 +358,6 @@ public class GradlePsiParser implements DependencyParser {
             String resolved = resolveVariable(variableName, psiFile);
             if (resolved != null) {
                 resolvedVersion = resolved;
-            } else {
-                LOGGER.debug("Could not resolve variable: " + variableName);
             }
         }
 

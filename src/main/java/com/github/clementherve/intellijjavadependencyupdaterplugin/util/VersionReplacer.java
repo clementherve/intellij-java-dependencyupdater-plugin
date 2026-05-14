@@ -93,7 +93,7 @@ public class VersionReplacer {
                                                  @NotNull String newVersion) {
         for (GrMethodCall methodCall : PsiTreeUtil.findChildrenOfType(file, GrMethodCall.class)) {
             PsiElement methodElement = methodCall.getInvokedExpression();
-            if (methodElement != null && "ext".equals(methodElement.getText())) {
+            if ("ext".equals(methodElement.getText())) {
                 String blockText = methodCall.getText();
                 Pattern pattern = Pattern.compile("(" + Pattern.quote(variableName) + "\\s*=\\s*['\"])([^'\"]+)(['\"])");
                 Matcher matcher = pattern.matcher(blockText);

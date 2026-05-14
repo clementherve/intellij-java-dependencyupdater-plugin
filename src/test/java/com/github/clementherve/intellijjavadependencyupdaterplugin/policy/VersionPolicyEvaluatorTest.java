@@ -250,6 +250,6 @@ public class VersionPolicyEvaluatorTest {
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Private Nexus");
 
         assertEquals(1, candidates.size());
-        assertEquals("Private Nexus", candidates.get(0).repositorySource());
+        assertEquals("Private Nexus", candidates.getFirst().repositorySource());
     }
 }
