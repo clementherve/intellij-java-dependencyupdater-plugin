@@ -1,6 +1,7 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.settings;
 
 import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.components.JBCheckBox;
@@ -141,10 +142,14 @@ public class DependencyUpdaterSettingsPanel {
         nexusBaseUrlField.setText(settings.getNexusBaseUrl());
         nexusUsernameField.setText(settings.getNexusUsername());
 
-        // Cache password to avoid slow operations on EDT during isModified() checks
-        String password = settings.getNexusPassword();
-        cachedPassword = password != null ? password : "";
-        nexusPasswordField.setText(cachedPassword);
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            String password = settings.getNexusPassword();
+            String cached = password != null ? password : "";
+            SwingUtilities.invokeLater(() -> {
+                cachedPassword = cached;
+                nexusPasswordField.setText(cached);
+            });
+        });
 
         fallbackToMavenCentralCheckBox.setSelected(settings.isFallbackToMavenCentral());
         cacheTtlSpinner.setValue(settings.getCacheTtlMinutes());
