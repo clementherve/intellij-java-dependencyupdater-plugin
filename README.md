@@ -1,6 +1,4 @@
-# Gradle Dependency Updater Plugin
-
-> **Note**: This is a proof of concept IntelliJ IDEA plugin for managing Gradle dependencies.
+# Gradle Dependency Updater For Intellij
 
 ## Overview
 

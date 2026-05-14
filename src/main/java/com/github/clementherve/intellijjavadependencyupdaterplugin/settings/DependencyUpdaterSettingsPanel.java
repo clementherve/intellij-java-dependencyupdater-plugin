@@ -1,6 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.settings;
 
-import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionPolicy;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.components.JBCheckBox;
@@ -13,7 +13,6 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.List;
 
 /**
  * The settings UI panel.
@@ -28,7 +27,6 @@ public class DependencyUpdaterSettingsPanel {
     private final JBPasswordField nexusPasswordField;
     private final JBCheckBox fallbackToMavenCentralCheckBox;
     private final JSpinner cacheTtlSpinner;
-    private final JBCheckBox showGutterIconsCheckBox;
     private final JBCheckBox showInlayHintsCheckBox;
     private final ComboBox<DependencyUpdaterSettings.TriggerMode> triggerModeComboBox;
     private final JBTextField versionFilterRegexField;
@@ -40,13 +38,12 @@ public class DependencyUpdaterSettingsPanel {
         nexusBaseUrlField = new JBTextField();
         nexusUsernameField = new JBTextField();
         nexusPasswordField = new JBPasswordField();
-        fallbackToMavenCentralCheckBox = new JBCheckBox("Fallback to Maven Central if Nexus is unavailable");
+        fallbackToMavenCentralCheckBox = new JBCheckBox(DependencyUpdaterBundle.message("settings.fallbackToMavenCentral"));
 
         SpinnerNumberModel spinnerModel = new SpinnerNumberModel(30, 1, 1440, 5);
         cacheTtlSpinner = new JSpinner(spinnerModel);
 
-        showGutterIconsCheckBox = new JBCheckBox("Show gutter icons for outdated dependencies");
-        showInlayHintsCheckBox = new JBCheckBox("Show inlay hints with available versions");
+        showInlayHintsCheckBox = new JBCheckBox(DependencyUpdaterBundle.message("settings.showInlayHints"));
 
         versionFilterRegexField = new JBTextField();
 
@@ -64,22 +61,22 @@ public class DependencyUpdaterSettingsPanel {
         });
 
         myMainPanel = FormBuilder.createFormBuilder()
-                .addLabeledComponent(new JBLabel("Nexus Base URL:"), nexusBaseUrlField, 1, false)
-                .addComponentToRightColumn(new JBLabel("Example: https://nexus.company.com"), 0)
-                .addLabeledComponent(new JBLabel("Nexus username:"), nexusUsernameField, 1, false)
-                .addLabeledComponent(new JBLabel("Nexus password:"), nexusPasswordField, 1, false)
+                .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.nexus.url")), nexusBaseUrlField, 1, false)
+                .addComponentToRightColumn(new JBLabel(DependencyUpdaterBundle.message("settings.nexus.urlExample")), 0)
+                .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.nexus.username")), nexusUsernameField, 1, false)
+                .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.nexus.password")), nexusPasswordField, 1, false)
                 .addComponent(fallbackToMavenCentralCheckBox, 1)
                 .addSeparator(5)
-                .addLabeledComponent(new JBLabel("Cache TTL (minutes):"), cacheTtlSpinner, 1, false)
-                .addComponentToRightColumn(new JBLabel("How long to cache version information"), 0)
+                .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.cacheTtl")), cacheTtlSpinner, 1, false)
+                .addComponentToRightColumn(new JBLabel(DependencyUpdaterBundle.message("settings.cacheTtlHint")), 0)
                 .addSeparator(5)
                 .addComponent(showInlayHintsCheckBox, 1)
                 .addSeparator(5)
-                .addLabeledComponent(new JBLabel("Trigger mode:"), triggerModeComboBox, 1, false)
-                .addComponentToRightColumn(new JBLabel("When to check for dependency updates"), 0)
+                .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.triggerMode")), triggerModeComboBox, 1, false)
+                .addComponentToRightColumn(new JBLabel(DependencyUpdaterBundle.message("settings.triggerModeHint")), 0)
                 .addSeparator(5)
-                .addLabeledComponent(new JBLabel("Version filter regex:"), versionFilterRegexField, 1, false)
-                .addComponentToRightColumn(new JBLabel("Exclude versions matching this regex (e.g., \".*-SNAPSHOT\" or \".*-(alpha|beta).*\")"), 0)
+                .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.versionFilterRegex")), versionFilterRegexField, 1, false)
+                .addComponentToRightColumn(new JBLabel(DependencyUpdaterBundle.message("settings.versionFilterRegexHint")), 0)
                 .addSeparator(10)
                 .addComponentFillVertically(new JPanel(), 0)
                 .getPanel();
@@ -104,7 +101,6 @@ public class DependencyUpdaterSettingsPanel {
 
         if (fallbackToMavenCentralCheckBox.isSelected() != settings.isFallbackToMavenCentral()) return true;
         if (!cacheTtlSpinner.getValue().equals(settings.getCacheTtlMinutes())) return true;
-        if (showGutterIconsCheckBox.isSelected() != settings.isShowGutterIcons()) return true;
         if (showInlayHintsCheckBox.isSelected() != settings.isShowInlayHints()) return true;
 
         DependencyUpdaterSettings.TriggerMode selectedMode =
@@ -128,7 +124,6 @@ public class DependencyUpdaterSettingsPanel {
 
         settings.setFallbackToMavenCentral(fallbackToMavenCentralCheckBox.isSelected());
         settings.setCacheTtlMinutes((Integer) cacheTtlSpinner.getValue());
-        settings.setShowGutterIcons(showGutterIconsCheckBox.isSelected());
         settings.setShowInlayHints(showInlayHintsCheckBox.isSelected());
 
         DependencyUpdaterSettings.TriggerMode selectedMode =
@@ -153,7 +148,6 @@ public class DependencyUpdaterSettingsPanel {
 
         fallbackToMavenCentralCheckBox.setSelected(settings.isFallbackToMavenCentral());
         cacheTtlSpinner.setValue(settings.getCacheTtlMinutes());
-        showGutterIconsCheckBox.setSelected(settings.isShowGutterIcons());
         showInlayHintsCheckBox.setSelected(settings.isShowInlayHints());
         triggerModeComboBox.setSelectedItem(settings.getTriggerMode());
         versionFilterRegexField.setText(settings.getVersionFilterRegex());

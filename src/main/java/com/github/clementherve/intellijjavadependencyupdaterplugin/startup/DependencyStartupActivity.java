@@ -1,5 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.startup;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.DependencyInfo;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParser;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParserFactory;
@@ -43,7 +44,7 @@ public class DependencyStartupActivity implements ProjectActivity {
             return null;
         }
 
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Fetching dependencies", false) {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, DependencyUpdaterBundle.message("cache.taskTitle"), false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 fetchDependenciesAndSaveThemInCache(project, indicator);
@@ -59,12 +60,12 @@ public class DependencyStartupActivity implements ProjectActivity {
     }
 
     private void fetchDependenciesAndSaveThemInCache(@NotNull Project project, @NotNull ProgressIndicator indicator) {
-        indicator.setText("Finding Gradle build files...");
+        indicator.setText(DependencyUpdaterBundle.message("cache.findingFiles"));
 
         List<VirtualFile> buildFiles = findBuildGradleFilesInCurrentProject(project);
 
         if (buildFiles.isEmpty()) {
-            indicator.setText("No Gradle build files found");
+            indicator.setText(DependencyUpdaterBundle.message("cache.noFilesFound"));
             return;
         }
 
@@ -78,7 +79,7 @@ public class DependencyStartupActivity implements ProjectActivity {
 
             VirtualFile file = buildFiles.get(i);
             indicator.setFraction((double) i / buildFiles.size());
-            indicator.setText("Processing " + file.getName() + "...");
+            indicator.setText(DependencyUpdaterBundle.message("cache.processingFile", file.getName()));
 
             try {
                 List<DependencyInfo> dependencies = ReadAction.compute(() -> {
@@ -100,7 +101,7 @@ public class DependencyStartupActivity implements ProjectActivity {
                         return;
                     }
 
-                    indicator.setText2("Fetching versions for " + dependency.artifact());
+                    indicator.setText2(DependencyUpdaterBundle.message("cache.fetchingVersions", dependency.artifact()));
 
                     try {
                         service.fetchVersionsAndSaveThemToCache(dependency.group(), dependency.artifact());
@@ -116,6 +117,6 @@ public class DependencyStartupActivity implements ProjectActivity {
             }
         }
 
-        indicator.setText("Dependency cache warmup complete");
+        indicator.setText(DependencyUpdaterBundle.message("cache.complete"));
     }
 }

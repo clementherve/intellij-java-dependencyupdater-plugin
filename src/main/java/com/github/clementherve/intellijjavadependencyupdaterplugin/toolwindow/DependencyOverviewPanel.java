@@ -1,5 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.DependencyInfo;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParser;
@@ -68,7 +69,7 @@ public class DependencyOverviewPanel extends JPanel {
         this.table = new JBTable(tableModel);
         this.cardLayout = new CardLayout();
         this.contentPanel = new JPanel(cardLayout);
-        this.loadingLabel = new JLabel("Loading dependencies...", SwingConstants.CENTER);
+        this.loadingLabel = new JLabel(DependencyUpdaterBundle.message("toolWindow.loading"), SwingConstants.CENTER);
 
         setupLoadingPanel();
         setupTable();
@@ -141,24 +142,24 @@ public class DependencyOverviewPanel extends JPanel {
 
     private void refreshDependencies() {
         showLoading();
-        loadingLabel.setText("Scanning dependencies...");
+        loadingLabel.setText(DependencyUpdaterBundle.message("toolWindow.scanning"));
 
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Scanning dependencies", false) {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, DependencyUpdaterBundle.message("toolWindow.scanning"), false) {
             private final List<DependencyWithVersion> results = new ArrayList<>();
 
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
-                SwingUtilities.invokeLater(() -> loadingLabel.setText("Finding build.gradle files..."));
-                indicator.setText("Finding build.gradle files...");
+                SwingUtilities.invokeLater(() -> loadingLabel.setText(DependencyUpdaterBundle.message("toolWindow.findingFiles")));
+                indicator.setText(DependencyUpdaterBundle.message("toolWindow.findingFiles"));
 
                 List<VirtualFile> buildFiles = findBuildGradleFilesInCurrentProject(project);
 
                 if (buildFiles.isEmpty()) {
-                    SwingUtilities.invokeLater(() -> loadingLabel.setText("No build.gradle files found"));
+                    SwingUtilities.invokeLater(() -> loadingLabel.setText(DependencyUpdaterBundle.message("toolWindow.noFiles")));
                     return;
                 }
 
-                SwingUtilities.invokeLater(() -> loadingLabel.setText("Found " + buildFiles.size() + " build file(s), scanning dependencies..."));
+                SwingUtilities.invokeLater(() -> loadingLabel.setText(DependencyUpdaterBundle.message("toolWindow.foundFiles", buildFiles.size())));
 
                 DependencyUpdateService service = DependencyUpdateService.getInstance(project);
                 PsiManager psiManager = PsiManager.getInstance(project);
@@ -170,7 +171,7 @@ public class DependencyOverviewPanel extends JPanel {
 
                     VirtualFile file = buildFiles.get(i);
                     indicator.setFraction((double) i / buildFiles.size());
-                    String statusText = "Processing " + file.getName() + "...";
+                    String statusText = DependencyUpdaterBundle.message("toolWindow.processingFile", file.getName());
                     indicator.setText(statusText);
                     SwingUtilities.invokeLater(() -> loadingLabel.setText(statusText));
 
@@ -195,7 +196,7 @@ public class DependencyOverviewPanel extends JPanel {
                                 return;
                             }
 
-                            String checkingText = "Checking " + dependency.artifact();
+                            String checkingText = DependencyUpdaterBundle.message("toolWindow.checkingDependency", dependency.artifact());
                             indicator.setText2(checkingText);
                             SwingUtilities.invokeLater(() -> loadingLabel.setText(checkingText + "..."));
                             VersionCandidate latest = service.checkForUpdate(dependency);
@@ -219,7 +220,7 @@ public class DependencyOverviewPanel extends JPanel {
                     showTable();
 
                     if (results.isEmpty()) {
-                        loadingLabel.setText("No dependencies found");
+                        loadingLabel.setText(DependencyUpdaterBundle.message("toolWindow.noDependencies"));
                         showLoading();
                     }
                 });
@@ -229,7 +230,7 @@ public class DependencyOverviewPanel extends JPanel {
             public void onThrowable(@NotNull Throwable error) {
                 LOGGER.error("Failed to scan dependencies", error);
                 SwingUtilities.invokeLater(() -> {
-                    loadingLabel.setText("Error: " + error.getMessage());
+                    loadingLabel.setText(DependencyUpdaterBundle.message("toolWindow.error", error.getMessage()));
                     showLoading();
                 });
             }
@@ -269,7 +270,7 @@ public class DependencyOverviewPanel extends JPanel {
     private void updateSelectedDependencies(boolean pickVersion) {
         int[] selectedRows = table.getSelectedRows();
         if (selectedRows.length == 0) {
-            Messages.showInfoMessage(project, "Please select dependencies to update.", "Update Dependencies");
+            Messages.showInfoMessage(project, DependencyUpdaterBundle.message("toolWindow.dialog.selectToUpdate"), DependencyUpdaterBundle.message("toolWindow.dialog.selectToUpdateTitle"));
             return;
         }
 
@@ -283,7 +284,7 @@ public class DependencyOverviewPanel extends JPanel {
         }
 
         if (rowsToUpdate.isEmpty()) {
-            Messages.showInfoMessage(project, "Selected dependencies are already up to date.", "Update Dependencies");
+            Messages.showInfoMessage(project, DependencyUpdaterBundle.message("toolWindow.dialog.alreadyUpToDate"), DependencyUpdaterBundle.message("toolWindow.dialog.selectToUpdateTitle"));
             return;
         }
 
@@ -298,15 +299,18 @@ public class DependencyOverviewPanel extends JPanel {
                 refreshDependencies();
             }
         } else if (pickVersion) {
-            Messages.showInfoMessage(project, "Version picker is only available for single selection.", "Pick Version");
+            Messages.showInfoMessage(project, DependencyUpdaterBundle.message("toolWindow.dialog.singleSelectionOnly"), DependencyUpdaterBundle.message("toolWindow.dialog.pickVersionTitle"));
         } else {
-            // Update to latest version
-            StringBuilder message = new StringBuilder("Update the following dependencies?\n\n");
+            StringBuilder message = new StringBuilder(DependencyUpdaterBundle.message("toolWindow.dialog.confirmUpdateQuestion") + "\n\n");
             for (DependencyRow row : rowsToUpdate) {
                 message.append(String.format("%s: %s → %s\n", row.dependency().artifact(), row.dependency().currentVersion(), row.latestVersion().version()));
             }
 
-            int result = Messages.showOkCancelDialog(project, message.toString(), "Update " + rowsToUpdate.size() + " Dependencies", "Update", "Cancel", Messages.getQuestionIcon());
+            int result = Messages.showOkCancelDialog(project, message.toString(),
+                    DependencyUpdaterBundle.message("toolWindow.dialog.confirmUpdateTitle", rowsToUpdate.size()),
+                    DependencyUpdaterBundle.message("toolWindow.dialog.updateButton"),
+                    DependencyUpdaterBundle.message("toolWindow.dialog.cancelButton"),
+                    Messages.getQuestionIcon());
 
             if (result == Messages.OK) {
                 List<DependencyRow> sortedRows = sortUpdatedRowsReversed(rowsToUpdate);
@@ -341,16 +345,20 @@ public class DependencyOverviewPanel extends JPanel {
         List<DependencyRow> outdatedRows = allRows.stream().filter(row -> row.latestVersion() != null).toList();
 
         if (outdatedRows.isEmpty()) {
-            Messages.showInfoMessage(project, "All dependencies are up to date!", "Update All Dependencies");
+            Messages.showInfoMessage(project, DependencyUpdaterBundle.message("toolWindow.dialog.allUpToDate"), DependencyUpdaterBundle.message("toolWindow.dialog.allUpToDateTitle"));
             return;
         }
 
-        StringBuilder message = new StringBuilder("Update the following dependencies?\n\n");
+        StringBuilder message = new StringBuilder(DependencyUpdaterBundle.message("toolWindow.dialog.confirmUpdateQuestion") + "\n\n");
         for (DependencyRow row : outdatedRows) {
             message.append(String.format("%s: %s → %s\n", row.dependency().artifact(), row.dependency().currentVersion(), row.latestVersion().version()));
         }
 
-        int result = Messages.showOkCancelDialog(project, message.toString(), "Update " + outdatedRows.size() + " Dependencies", "Update All", "Cancel", Messages.getQuestionIcon());
+        int result = Messages.showOkCancelDialog(project, message.toString(),
+                DependencyUpdaterBundle.message("toolWindow.dialog.confirmUpdateTitle", outdatedRows.size()),
+                DependencyUpdaterBundle.message("toolWindow.dialog.updateAllButton"),
+                DependencyUpdaterBundle.message("toolWindow.dialog.cancelButton"),
+                Messages.getQuestionIcon());
 
         if (result == Messages.OK) {
             final List<DependencyRow> sortedRows = sortUpdatedRowsReversed(outdatedRows);
@@ -368,7 +376,7 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class RefreshAction extends AnAction {
         RefreshAction() {
-            super("Refresh", "Refresh dependency list", AllIcons.Actions.Refresh);
+            super(DependencyUpdaterBundle.message("toolWindow.refresh"), DependencyUpdaterBundle.message("toolWindow.action.refresh.description"), AllIcons.Actions.Refresh);
         }
 
         @Override
@@ -379,7 +387,7 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class UpdateAllAction extends AnAction {
         UpdateAllAction() {
-            super("Update All", "Update all outdated dependencies", AllIcons.Actions.Selectall);
+            super(DependencyUpdaterBundle.message("toolWindow.updateAll"), DependencyUpdaterBundle.message("toolWindow.action.updateAll.description"), AllIcons.Actions.Selectall);
         }
 
         @Override
@@ -390,7 +398,7 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class UpdateSelectedAction extends AnAction {
         UpdateSelectedAction() {
-            super("Update Selected", "Update selected dependencies", AllIcons.Actions.Upload);
+            super(DependencyUpdaterBundle.message("toolWindow.updateSelected"), DependencyUpdaterBundle.message("toolWindow.action.updateSelected.description"), AllIcons.Actions.Upload);
         }
 
         @Override
@@ -401,7 +409,7 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class PickVersionAction extends AnAction {
         PickVersionAction() {
-            super("Pick Version", "Pick a specific version for selected dependency", AllIcons.Actions.Find);
+            super(DependencyUpdaterBundle.message("toolWindow.pickVersion"), DependencyUpdaterBundle.message("toolWindow.action.pickVersion.description"), AllIcons.Actions.Find);
         }
 
         @Override

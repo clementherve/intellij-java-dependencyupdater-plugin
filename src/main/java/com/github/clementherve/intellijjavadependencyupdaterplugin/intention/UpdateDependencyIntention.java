@@ -1,5 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.intention;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.DependencyInfo;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParser;
@@ -47,25 +48,20 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
             return;
         }
 
-        // Find the dependency at cursor position
         DependencyInfo dependency = findDependencyAtElement(file, element);
         if (dependency == null) {
             return;
         }
 
-        // Get the best version candidate (use cached if available)
         DependencyUpdateService service = DependencyUpdateService.getInstance(project);
         VersionCandidate candidate = cachedCandidate != null ? cachedCandidate
                 : service.getFromCache(dependency);
 
         if (candidate == null) {
-            // Fetch in background - this will warm the cache
-            // The user will need to invoke the intention again after cache is warm
             service.scheduleCacheWarmup(dependency);
             return;
         }
 
-        // Apply the update (we're already in a write action due to startInWriteAction())
         VersionReplacer.applyUpdateInWriteAction(project, dependency, candidate.version());
     }
 
@@ -84,7 +80,6 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
             return false;
         }
 
-        // Check if there's a dependency at cursor
         DependencyInfo dependency = findDependencyAtElement(file, element);
         if (dependency == null) {
             cachedCandidate = null;
@@ -95,11 +90,9 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
         DependencyUpdateService service = DependencyUpdateService.getInstance(project);
         VersionCandidate candidate = service.getFromCache(dependency);
 
-        // Cache for getText() method
         cachedDependency = dependency;
         cachedCandidate = candidate;
 
-        // Show intention even if cache is empty - we'll fetch in background
         return true;
     }
 
@@ -107,7 +100,7 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
     @NotNull
     @Override
     public String getFamilyName() {
-        return "Dependency Updater";
+        return DependencyUpdaterBundle.message("intention.familyName");
     }
 
     @NotNull
@@ -115,20 +108,21 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
     public String getText() {
         if (cachedDependency != null) {
             if (cachedCandidate != null) {
-                return String.format("Update '%s' to %s",
+                return DependencyUpdaterBundle.message("intention.updateDependency",
                         cachedDependency.artifact(),
                         cachedCandidate.version());
             } else {
-                return String.format("Check for updates to '%s'", cachedDependency.artifact());
+                return DependencyUpdaterBundle.message("intention.checkForUpdates", cachedDependency.artifact());
             }
         }
-        return "Check for dependency updates";
+        return DependencyUpdaterBundle.message("intention.checkForDependencyUpdates");
     }
 
     /**
      * Finds the dependency info at the given element position.
      */
     private DependencyInfo findDependencyAtElement(@NotNull PsiFile file, @NotNull PsiElement element) {
+        // todo: extract in a service
         DependencyParser parser = DependencyParserFactory.getParser(file);
         if (parser == null) {
             return null;
@@ -136,7 +130,6 @@ public class UpdateDependencyIntention extends PsiElementBaseIntentionAction imp
 
         List<DependencyInfo> dependencies = parser.parseDependencies(file);
 
-        // Find the dependency that contains this element
         int offset = element.getTextOffset();
         for (DependencyInfo dependency : dependencies) {
             if (dependency.psiElementPointer() != null) {

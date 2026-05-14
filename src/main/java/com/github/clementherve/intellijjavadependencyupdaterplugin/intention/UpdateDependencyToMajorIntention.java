@@ -1,5 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.intention;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.DependencyInfo;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParser;
@@ -54,6 +55,7 @@ public class UpdateDependencyToMajorIntention extends PsiElementBaseIntentionAct
 
     @Override
     public boolean isAvailable(@NotNull Project project, Editor editor, @NotNull PsiElement element) {
+        // todo: extract in a service
         PsiFile file = element.getContainingFile();
         if (file == null) {
             return false;
@@ -75,16 +77,17 @@ public class UpdateDependencyToMajorIntention extends PsiElementBaseIntentionAct
     @NotNull
     @Override
     public String getFamilyName() {
-        return "Dependency Updater";
+        return DependencyUpdaterBundle.message("intention.familyName");
     }
 
     @NotNull
     @Override
     public String getText() {
-        return "Update to latest major version";
+        return DependencyUpdaterBundle.message("intention.updateDependencyToMajor");
     }
 
     private DependencyInfo findDependencyAtElement(@NotNull PsiFile file, @NotNull PsiElement element) {
+        // todo: extract in a service
         DependencyParser parser = DependencyParserFactory.getParser(file);
         if (parser == null) {
             return null;

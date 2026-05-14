@@ -9,6 +9,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.util.Semantic
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.VersionReplacer;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.VersionUpdateType;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
 import com.intellij.openapi.editor.Editor;
@@ -54,6 +55,7 @@ public class UpdateDependencyToPatchIntention extends PsiElementBaseIntentionAct
 
     @Override
     public boolean isAvailable(@NotNull Project project, Editor editor, @NotNull PsiElement element) {
+        // todo: extract in a service
         PsiFile file = element.getContainingFile();
         if (file == null) {
             return false;
@@ -75,16 +77,17 @@ public class UpdateDependencyToPatchIntention extends PsiElementBaseIntentionAct
     @NotNull
     @Override
     public String getFamilyName() {
-        return "Dependency Updater";
+        return DependencyUpdaterBundle.message("intention.familyName");
     }
 
     @NotNull
     @Override
     public String getText() {
-        return "Update to latest patch version";
+        return DependencyUpdaterBundle.message("intention.updateDependencyToPatch");
     }
 
     private DependencyInfo findDependencyAtElement(@NotNull PsiFile file, @NotNull PsiElement element) {
+        // todo: extract in a service
         DependencyParser parser = DependencyParserFactory.getParser(file);
         if (parser == null) {
             return null;
