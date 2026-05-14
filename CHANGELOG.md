@@ -1,7 +1,12 @@
 <!-- Keep a Changelog guide -> https://keepachangelog.com -->
 
-# intellij-java-dependencyupdater-plugin Changelog
+# Gradle Dependency Updater Changelog
 
 ## [Unreleased]
+
+Initial release of the plugin
+
 ### Added
-- Initial scaffold created from [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
+- Main feature: outdated dependency detection and underlining from a build.gradle.
+- Side panel to manage build.gradle dependencies.
+- Settings panel to configure the plugin.

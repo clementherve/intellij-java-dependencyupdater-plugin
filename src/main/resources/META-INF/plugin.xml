@@ -8,11 +8,9 @@
         <p>Features:</p>
         <ul>
             <li>Automatic detection of outdated dependencies in build.gradle files</li>
-            <li>Visual gutter icons indicating available updates</li>
             <li>Alt+Enter quick-fix intentions to update dependencies</li>
-            <li>Configurable version policies (stable only, include/exclude patterns)</li>
-            <li>Support for Maven Central and private Nexus repositories</li>
-            <li>Smart caching to minimize network requests</li>
+            <li>Configurable version policies</li>
+            <li>Support for Maven Central and private Nexus repository</li>
         </ul>
     ]]></description>
 
@@ -56,7 +54,7 @@
         <!-- Tool window -->
         <toolWindow id="Gradle Dependency Updater"
                     anchor="bottom"
-                    icon="AllIcons.Toolwindows.Dependencies"
+                    icon="/dependency-icon.svg"
                     factoryClass="com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow.DependencyOverviewToolWindowFactory"/>
 
         <!-- Actions -->
