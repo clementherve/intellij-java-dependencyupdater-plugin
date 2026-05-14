@@ -6,6 +6,12 @@ plugins {
     id("org.jetbrains.changelog")
 }
 
+tasks {
+    buildSearchableOptions {
+        enabled = false
+    }
+}
+
 dependencies {
     testImplementation("junit:junit:4.13.2")
 
