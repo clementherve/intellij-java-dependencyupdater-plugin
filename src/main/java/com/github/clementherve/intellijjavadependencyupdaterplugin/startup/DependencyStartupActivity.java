@@ -5,7 +5,6 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.Dependenc
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParserFactory;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.settings.DependencyUpdaterSettings;
-import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -14,8 +13,6 @@ import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.vfs.VfsUtilCore;
-import com.intellij.openapi.vfs.VirtualFileVisitor;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import kotlin.Unit;
@@ -26,78 +23,45 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.github.clementherve.intellijjavadependencyupdaterplugin.util.FindBuildGradleFilesUtil.findBuildGradleFilesInCurrentProject;
+
 /**
  * Startup activity that pre-populates the version cache when the project opens.
  * This improves user experience by having version information ready before opening build files.
  */
 public class DependencyStartupActivity implements ProjectActivity {
 
-    private static final Logger LOG = Logger.getInstance(DependencyStartupActivity.class);
+    private static final Logger LOGGER = Logger.getInstance(DependencyStartupActivity.class);
 
     @Nullable
     @Override
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
 
-        // Only run if trigger mode is ON_OPEN
-        if (settings.getTriggerMode() != DependencyUpdaterSettings.TriggerMode.ON_OPEN) {
-            LOG.debug("Skipping startup cache warming - trigger mode is: " + settings.getTriggerMode());
+        final boolean isTriggerModeOnOpen = settings.getTriggerMode() != DependencyUpdaterSettings.TriggerMode.ON_OPEN;
+        if (isTriggerModeOnOpen) {
             return null;
         }
 
-        LOG.info("Starting dependency cache warmup on project open");
-
-        // Run cache warming in background
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Warming up dependency cache", false) {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Fetching dependencies", false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
-                warmUpCache(project, indicator);
+                fetchDependenciesAndSaveThemInCache(project, indicator);
             }
 
             @Override
             public void onThrowable(@NotNull Throwable error) {
-                LOG.warn("Failed to warm up dependency cache", error);
+                LOGGER.error("Failed to fetch dependencies", error);
             }
         });
 
         return null;
     }
 
-    /**
-     * Scans all build.gradle files and pre-fetches version information.
-     */
-    private void warmUpCache(@NotNull Project project, @NotNull ProgressIndicator indicator) {
+    private void fetchDependenciesAndSaveThemInCache(@NotNull Project project, @NotNull ProgressIndicator indicator) {
         indicator.setText("Finding Gradle build files...");
 
-        // Find all build.gradle files by traversing the project directory
-        List<VirtualFile> buildFiles = ReadAction.compute(() -> {
-            List<VirtualFile> files = new ArrayList<>();
-            VirtualFile baseDir = project.getBaseDir();
-
-            if (baseDir != null) {
-                VfsUtilCore.visitChildrenRecursively(baseDir, new VirtualFileVisitor<Void>() {
-                    @Override
-                    public boolean visitFile(@NotNull VirtualFile file) {
-                        // Skip common directories
-                        if (file.isDirectory()) {
-                            String name = file.getName();
-                            if (name.startsWith(".") || name.equals("build") ||
-                                name.equals("node_modules") || name.equals("target")) {
-                                return false;
-                            }
-                            return true;
-                        }
-
-                        // Check if it's a build.gradle file
-                        if (SupportedFilesUtil.isSupportedFile(file.getName())) {
-                            files.add(file);
-                        }
-                        return true;
-                    }
-                });
-            }
-            return files;
-        });
+        List<VirtualFile> buildFiles = findBuildGradleFilesInCurrentProject(project);
 
         if (buildFiles.isEmpty()) {
             indicator.setText("No Gradle build files found");
@@ -139,20 +103,19 @@ public class DependencyStartupActivity implements ProjectActivity {
                     indicator.setText2("Fetching versions for " + dependency.artifact());
 
                     try {
-                        service.getVersions(dependency.group(), dependency.artifact());
+                        service.fetchVersionsAndSaveThemToCache(dependency.group(), dependency.artifact());
                     } catch (Exception e) {
-                        LOG.debug("Failed to fetch versions for " + dependency.getFullCoordinates() + ": " + e.getMessage());
+                        LOGGER.warn("Failed to fetch versions for " + dependency.getFullCoordinates() + ": " + e.getMessage());
                         // Continue with other dependencies
                     }
                 }
 
             } catch (Exception e) {
-                LOG.warn("Failed to process " + file.getName(), e);
+                LOGGER.warn("Failed to process " + file.getName(), e);
                 // Continue with other files
             }
         }
 
         indicator.setText("Dependency cache warmup complete");
-        LOG.info("Dependency cache warmup completed successfully");
     }
 }

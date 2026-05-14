@@ -27,9 +27,7 @@ public class VersionPickerDialog extends DialogWrapper {
     private JBList<String> versionList;
     private String selectedVersion;
 
-    public VersionPickerDialog(@NotNull Project project,
-                               @NotNull DependencyInfo dependency,
-                               @NotNull List<VersionCandidate> availableVersions) {
+    public VersionPickerDialog(@NotNull Project project, @NotNull DependencyInfo dependency, @NotNull List<VersionCandidate> availableVersions) {
         super(project);
         this.dependency = dependency;
         this.availableVersions = availableVersions;
@@ -41,20 +39,15 @@ public class VersionPickerDialog extends DialogWrapper {
     @Nullable
     @Override
     protected JComponent createCenterPanel() {
-        // Create version list
-        String[] versions = availableVersions.stream()
-            .map(VersionCandidate::version)
-            .toArray(String[]::new);
+        String[] versions = availableVersions.stream().map(VersionCandidate::version).toArray(String[]::new);
 
         versionList = new JBList<>(versions);
         versionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // Select the first version (latest) by default
         if (versions.length > 0) {
             versionList.setSelectedIndex(0);
         }
 
-        // Add double-click listener to confirm selection
         versionList.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -68,16 +61,21 @@ public class VersionPickerDialog extends DialogWrapper {
         scrollPane.setPreferredSize(new Dimension(400, 300));
 
         JPanel panel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new JBLabel("Dependency:"),
-                new JBLabel(dependency.group() + ":" + dependency.artifact()), 1, false)
-            .addLabeledComponent(new JBLabel("Current version:"),
-                new JBLabel(dependency.currentVersion()), 1, false)
-            .addSeparator(10)
-            .addLabeledComponent(new JBLabel("Available versions:"), scrollPane, 1, true)
-            .addComponentToRightColumn(new JBLabel("(Latest version at top)"), 0)
-            .getPanel();
+                .addLabeledComponent(
+                        new JBLabel("Dependency:"),
+                        new JBLabel(dependency.group() + ":" + dependency.artifact()), 1, false)
+                .addLabeledComponent(
+                        new JBLabel("Current version:"),
+                        new JBLabel(dependency.currentVersion()), 1, false)
+                .addSeparator(10)
+                .addLabeledComponent(
+                        new JBLabel("Available versions:"), scrollPane, 1, true)
+                .addComponentToRightColumn(
+                        new JBLabel("(Latest version at the top)"), 0)
+                .getPanel();
 
         panel.setBorder(JBUI.Borders.empty(10));
+
         return panel;
     }
 
@@ -95,19 +93,11 @@ public class VersionPickerDialog extends DialogWrapper {
         return selectedVersion;
     }
 
-    /**
-     * Shows the version picker dialog and returns the selected version.
-     * Returns null if dialog was canceled or no version was selected.
-     */
     @Nullable
-    public static String pickVersion(@NotNull Project project,
-                                     @NotNull DependencyInfo dependency,
-                                     @NotNull DependencyUpdateService service) {
-        // Get all available versions from cache
+    public static String pickVersion(@NotNull Project project, @NotNull DependencyInfo dependency, @NotNull DependencyUpdateService service) {
         List<VersionCandidate> versions = service.getAllCandidatesFromCache(dependency);
 
         if (versions.isEmpty()) {
-            // No versions available in cache, schedule fetch
             service.scheduleCacheWarmup(dependency);
             return null;
         }

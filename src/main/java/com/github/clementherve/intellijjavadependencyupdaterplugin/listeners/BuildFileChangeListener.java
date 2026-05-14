@@ -121,7 +121,7 @@ public class BuildFileChangeListener implements FileDocumentManagerListener {
                     service.invalidateCache(dependency.group(), dependency.artifact());
 
                     // Fetch fresh versions (this will populate cache)
-                    service.getVersions(dependency.group(), dependency.artifact());
+                    service.fetchVersionsAndSaveThemToCache(dependency.group(), dependency.artifact());
 
                     LOG.debug("Refreshed cache for " + dependency.getFullCoordinates());
                 } catch (Exception e) {

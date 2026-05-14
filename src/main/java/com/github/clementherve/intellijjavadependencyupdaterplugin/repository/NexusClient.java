@@ -18,8 +18,8 @@ import java.util.List;
  */
 public class NexusClient implements VersionRepository {
 
-    private static final Logger LOG = Logger.getInstance(NexusClient.class);
-    private static final int TIMEOUT_MS = 10000;
+    private static final Logger LOGGER = Logger.getInstance(NexusClient.class);
+    private static final int TIMEOUT_MS = 10_000;
 
     private final String baseUrl;
     private final String username;
@@ -40,10 +40,7 @@ public class NexusClient implements VersionRepository {
         String metadataUrl = String.format("%s/%s/%s/maven-metadata.xml",
                 baseUrl, groupPath, artifact);
 
-        LOG.info("Fetching versions from Nexus: " + metadataUrl);
-
         try {
-            // Build the request with authentication if provided
             final String authHeader;
             if (username != null && !username.isEmpty() && password != null) {
                 String auth = username + ":" + password;
@@ -66,15 +63,15 @@ public class NexusClient implements VersionRepository {
 
         } catch (HttpRequests.HttpStatusException e) {
             if (e.getStatusCode() == 401) {
-                LOG.warn("Authentication failed for Nexus: " + baseUrl);
+                LOGGER.warn("Authentication failed for Nexus: " + baseUrl);
                 throw new IOException("Nexus authentication failed. Please check your credentials.", e);
             } else if (e.getStatusCode() == 404) {
-                LOG.warn("Artifact not found in Nexus: " + group + ":" + artifact);
+                LOGGER.warn("Artifact not found in Nexus: " + group + ":" + artifact);
                 return Collections.emptyList();
             }
             throw e;
         } catch (IOException e) {
-            LOG.warn("Failed to fetch versions from Nexus for " + group + ":" + artifact, e);
+            LOGGER.error("Failed to fetch versions from Nexus for " + group + ":" + artifact, e);
             throw e;
         }
     }
@@ -111,7 +108,7 @@ public class NexusClient implements VersionRepository {
                 pos = versionEnd + 10;
             }
         } catch (Exception e) {
-            LOG.warn("Failed to parse Nexus metadata XML", e);
+            LOGGER.warn("Failed to parse Nexus metadata XML", e);
         }
 
         return versions;

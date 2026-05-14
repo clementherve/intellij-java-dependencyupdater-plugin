@@ -14,9 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service(Service.Level.PROJECT)
 public final class VersionCache {
-
-    private static final Logger LOGGER = Logger.getInstance(VersionCache.class);
-
+    
     private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
 
     public static VersionCache getInstance(@NotNull Project project) {
@@ -37,7 +35,6 @@ public final class VersionCache {
         CacheEntry entry = cache.get(key);
 
         if (entry == null) {
-            LOGGER.debug("Cache miss for " + key);
             return null;
         }
 

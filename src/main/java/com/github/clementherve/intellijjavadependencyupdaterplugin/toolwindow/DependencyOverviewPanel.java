@@ -5,31 +5,35 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.model.Version
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParser;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParserFactory;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow.model.DependencyRow;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow.model.DependencyWithVersion;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.VersionReplacer;
 import com.intellij.icons.AllIcons;
-import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.actionSystem.ActionToolbar;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
-import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
-import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.SmartPsiElementPointer;
-import com.intellij.openapi.vfs.VfsUtilCore;
-import com.intellij.openapi.vfs.VirtualFileVisitor;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.table.JBTable;
 import org.jetbrains.annotations.NotNull;
@@ -38,6 +42,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.github.clementherve.intellijjavadependencyupdaterplugin.util.FindBuildGradleFilesUtil.findBuildGradleFilesInCurrentProject;
 
 /**
  * Main panel for the dependency overview tool window.
@@ -77,19 +83,15 @@ public class DependencyOverviewPanel extends JPanel {
 
     private void setupFileListener() {
         // Listen for document saves to auto-refresh when build files change
-        project.getMessageBus().connect().subscribe(
-            FileDocumentManagerListener.TOPIC,
-            new FileDocumentManagerListener() {
-                @Override
-                public void beforeDocumentSaving(@NotNull Document document) {
-                    VirtualFile file = FileDocumentManager.getInstance().getFile(document);
-                    if (file != null && SupportedFilesUtil.isSupportedFile(file.getName())) {
-                        // Build file was saved, refresh the panel
-                        SwingUtilities.invokeLater(() -> refreshDependencies());
-                    }
+        project.getMessageBus().connect().subscribe(FileDocumentManagerListener.TOPIC, new FileDocumentManagerListener() {
+            @Override
+            public void beforeDocumentSaving(@NotNull Document document) {
+                VirtualFile file = FileDocumentManager.getInstance().getFile(document);
+                if (file != null && SupportedFilesUtil.isSupportedFile(file.getName())) {
+                    SwingUtilities.invokeLater(() -> refreshDependencies());
                 }
             }
-        );
+        });
     }
 
 
@@ -103,7 +105,6 @@ public class DependencyOverviewPanel extends JPanel {
         table.setAutoCreateRowSorter(true);
         table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
-        // Double-click to navigate
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -132,8 +133,7 @@ public class DependencyOverviewPanel extends JPanel {
         actionGroup.add(new UpdateSelectedAction());
         actionGroup.add(new PickVersionAction());
 
-        ActionToolbar toolbar = ActionManager.getInstance()
-            .createActionToolbar("DependencyOverview", actionGroup, true);
+        ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("DependencyOverview", actionGroup, true);
         toolbar.setTargetComponent(this);
 
         add(toolbar.getComponent(), BorderLayout.NORTH);
@@ -151,32 +151,7 @@ public class DependencyOverviewPanel extends JPanel {
                 SwingUtilities.invokeLater(() -> loadingLabel.setText("Finding build.gradle files..."));
                 indicator.setText("Finding build.gradle files...");
 
-                // Find all build.gradle files by traversing the project directory
-                // todo: extract in a service and share with DependencyStartupActivity
-                List<VirtualFile> buildFiles = ReadAction.compute(() -> {
-                    List<VirtualFile> files = new ArrayList<>();
-                    VirtualFile baseDir = project.getBaseDir(); // fixme: getBaseDir is deprecated
-
-                    if (baseDir != null) {
-                        VfsUtilCore.visitChildrenRecursively(baseDir, new VirtualFileVisitor<Void>() {
-                            @Override
-                            public boolean visitFile(@NotNull VirtualFile file) {
-                                // Skip common directories
-                                if (file.isDirectory()) {
-                                    String name = file.getName();
-                                    return !name.startsWith(".") && !name.equals("build") &&
-                                            !name.equals("node_modules") && !name.equals("target");
-                                }
-
-                                if (SupportedFilesUtil.isSupportedFile(file.getName())) {
-                                    files.add(file);
-                                }
-                                return true;
-                            }
-                        });
-                    }
-                    return files;
-                });
+                List<VirtualFile> buildFiles = findBuildGradleFilesInCurrentProject(project);
 
                 if (buildFiles.isEmpty()) {
                     SwingUtilities.invokeLater(() -> loadingLabel.setText("No build.gradle files found"));
@@ -188,7 +163,6 @@ public class DependencyOverviewPanel extends JPanel {
                 DependencyUpdateService service = DependencyUpdateService.getInstance(project);
                 PsiManager psiManager = PsiManager.getInstance(project);
 
-                // Parse dependencies from each file
                 for (int i = 0; i < buildFiles.size(); i++) {
                     if (indicator.isCanceled()) {
                         return;
@@ -224,7 +198,6 @@ public class DependencyOverviewPanel extends JPanel {
                             String checkingText = "Checking " + dependency.artifact();
                             indicator.setText2(checkingText);
                             SwingUtilities.invokeLater(() -> loadingLabel.setText(checkingText + "..."));
-                            // Use checkForUpdate() instead of checkForUpdateFromCache() to fetch fresh data
                             VersionCandidate latest = service.checkForUpdate(dependency);
                             results.add(new DependencyWithVersion(dependency, latest));
                         }
@@ -240,7 +213,7 @@ public class DependencyOverviewPanel extends JPanel {
                 SwingUtilities.invokeLater(() -> {
                     tableModel.clear();
                     for (DependencyWithVersion result : results) {
-                        tableModel.addRow(result.dependency, result.latestVersion);
+                        tableModel.addRow(result.dependency(), result.latestVersion());
                     }
                     tableModel.refresh();
                     showTable();
@@ -263,6 +236,7 @@ public class DependencyOverviewPanel extends JPanel {
         });
     }
 
+
     private void navigateToSelectedDependency() {
         int selectedRow = table.getSelectedRow();
         if (selectedRow < 0) {
@@ -270,7 +244,7 @@ public class DependencyOverviewPanel extends JPanel {
         }
 
         int modelRow = table.convertRowIndexToModel(selectedRow);
-        DependencyTableModel.DependencyRow row = tableModel.getRow(modelRow);
+        DependencyRow row = tableModel.getRow(modelRow);
 
         SmartPsiElementPointer<PsiElement> pointer = row.dependency().psiElementPointer();
         if (pointer == null) {
@@ -287,11 +261,7 @@ public class DependencyOverviewPanel extends JPanel {
             return;
         }
 
-        OpenFileDescriptor descriptor = new OpenFileDescriptor(
-            project,
-            containingFile.getVirtualFile(),
-            element.getTextOffset()
-        );
+        OpenFileDescriptor descriptor = new OpenFileDescriptor(project, containingFile.getVirtualFile(), element.getTextOffset());
 
         FileEditorManager.getInstance(project).openTextEditor(descriptor, true);
     }
@@ -303,10 +273,10 @@ public class DependencyOverviewPanel extends JPanel {
             return;
         }
 
-        List<DependencyTableModel.DependencyRow> rowsToUpdate = new ArrayList<>();
+        List<DependencyRow> rowsToUpdate = new ArrayList<>();
         for (int selectedRow : selectedRows) {
             int modelRow = table.convertRowIndexToModel(selectedRow);
-            DependencyTableModel.DependencyRow row = tableModel.getRow(modelRow);
+            DependencyRow row = tableModel.getRow(modelRow);
             if (row.latestVersion() != null || pickVersion) {
                 rowsToUpdate.add(row);
             }
@@ -318,14 +288,12 @@ public class DependencyOverviewPanel extends JPanel {
         }
 
         if (pickVersion && rowsToUpdate.size() == 1) {
-            // Pick specific version for single selection
-            DependencyTableModel.DependencyRow row = rowsToUpdate.getFirst();
+            DependencyRow row = rowsToUpdate.getFirst();
             DependencyUpdateService service = DependencyUpdateService.getInstance(project);
             String selectedVersion = VersionPickerDialog.pickVersion(project, row.dependency(), service);
 
             if (selectedVersion != null) {
                 VersionReplacer.applyUpdate(project, row.dependency(), selectedVersion);
-                // Commit document changes to PSI before refreshing
                 PsiDocumentManager.getInstance(project).commitAllDocuments();
                 refreshDependencies();
             }
@@ -334,40 +302,17 @@ public class DependencyOverviewPanel extends JPanel {
         } else {
             // Update to latest version
             StringBuilder message = new StringBuilder("Update the following dependencies?\n\n");
-            for (DependencyTableModel.DependencyRow row : rowsToUpdate) {
-                message.append(String.format("%s: %s → %s\n",
-                    row.dependency().artifact(),
-                    row.dependency().currentVersion(),
-                    row.latestVersion().version()));
+            for (DependencyRow row : rowsToUpdate) {
+                message.append(String.format("%s: %s → %s\n", row.dependency().artifact(), row.dependency().currentVersion(), row.latestVersion().version()));
             }
 
-            int result = Messages.showOkCancelDialog(
-                project,
-                message.toString(),
-                "Update " + rowsToUpdate.size() + " Dependencies",
-                "Update",
-                "Cancel",
-                Messages.getQuestionIcon()
-            );
+            int result = Messages.showOkCancelDialog(project, message.toString(), "Update " + rowsToUpdate.size() + " Dependencies", "Update", "Cancel", Messages.getQuestionIcon());
 
             if (result == Messages.OK) {
-                // Sort updates in reverse order (bottom to top) to avoid position invalidation
-                List<DependencyTableModel.DependencyRow> sortedRows = rowsToUpdate.stream()
-                        .sorted((r1, r2) -> {
-                            int offset1 = r1.dependency().psiElementPointer() != null &&
-                                         r1.dependency().psiElementPointer().getElement() != null
-                                    ? r1.dependency().psiElementPointer().getElement().getTextOffset()
-                                    : 0;
-                            int offset2 = r2.dependency().psiElementPointer() != null &&
-                                         r2.dependency().psiElementPointer().getElement() != null
-                                    ? r2.dependency().psiElementPointer().getElement().getTextOffset()
-                                    : 0;
-                            return Integer.compare(offset2, offset1);
-                        })
-                        .toList();
+                List<DependencyRow> sortedRows = sortUpdatedRowsReversed(rowsToUpdate);
 
                 WriteCommandAction.runWriteCommandAction(project, "Update Dependencies", null, () -> {
-                    for (DependencyTableModel.DependencyRow row : sortedRows) {
+                    for (DependencyRow row : sortedRows) {
                         VersionReplacer.applyUpdateInWriteAction(project, row.dependency(), row.latestVersion().version());
                     }
                 });
@@ -378,11 +323,22 @@ public class DependencyOverviewPanel extends JPanel {
         }
     }
 
+    // Sort updates in reverse order (bottom to top) to avoid position invalidation
+    private List<DependencyRow> sortUpdatedRowsReversed(final List<DependencyRow> rowsToUpdate) {
+        return rowsToUpdate.stream().sorted((r1, r2) -> {
+            final SmartPsiElementPointer<PsiElement> psiElementPointer1 = r1.dependency().psiElementPointer();
+            final SmartPsiElementPointer<PsiElement> psiElementPointer2 = r2.dependency().psiElementPointer();
+
+            int offset1 = psiElementPointer1 != null && psiElementPointer1.getElement() != null ? psiElementPointer1.getElement().getTextOffset() : 0;
+            int offset2 = psiElementPointer2 != null && psiElementPointer2.getElement() != null ? psiElementPointer2.getElement().getTextOffset() : 0;
+
+            return Integer.compare(offset2, offset1);
+        }).toList();
+    }
+
     private void updateAllDependencies() {
-        List<DependencyTableModel.DependencyRow> allRows = tableModel.getAllRows();
-        List<DependencyTableModel.DependencyRow> outdatedRows = allRows.stream()
-            .filter(row -> row.latestVersion() != null)
-            .toList();
+        List<DependencyRow> allRows = tableModel.getAllRows();
+        List<DependencyRow> outdatedRows = allRows.stream().filter(row -> row.latestVersion() != null).toList();
 
         if (outdatedRows.isEmpty()) {
             Messages.showInfoMessage(project, "All dependencies are up to date!", "Update All Dependencies");
@@ -390,52 +346,26 @@ public class DependencyOverviewPanel extends JPanel {
         }
 
         StringBuilder message = new StringBuilder("Update the following dependencies?\n\n");
-        for (DependencyTableModel.DependencyRow row : outdatedRows) {
-            message.append(String.format("%s: %s → %s\n",
-                row.dependency().artifact(),
-                row.dependency().currentVersion(),
-                row.latestVersion().version()));
+        for (DependencyRow row : outdatedRows) {
+            message.append(String.format("%s: %s → %s\n", row.dependency().artifact(), row.dependency().currentVersion(), row.latestVersion().version()));
         }
 
-        int result = Messages.showOkCancelDialog(
-            project,
-            message.toString(),
-            "Update " + outdatedRows.size() + " Dependencies",
-            "Update All",
-            "Cancel",
-            Messages.getQuestionIcon()
-        );
+        int result = Messages.showOkCancelDialog(project, message.toString(), "Update " + outdatedRows.size() + " Dependencies", "Update All", "Cancel", Messages.getQuestionIcon());
 
         if (result == Messages.OK) {
-            // Sort updates in reverse order (bottom to top) to avoid position invalidation
-            List<DependencyTableModel.DependencyRow> sortedRows = outdatedRows.stream()
-                    .sorted((r1, r2) -> {
-                        int offset1 = r1.dependency().psiElementPointer() != null &&
-                                     r1.dependency().psiElementPointer().getElement() != null
-                                ? r1.dependency().psiElementPointer().getElement().getTextOffset()
-                                : 0;
-                        int offset2 = r2.dependency().psiElementPointer() != null &&
-                                     r2.dependency().psiElementPointer().getElement() != null
-                                ? r2.dependency().psiElementPointer().getElement().getTextOffset()
-                                : 0;
-                        return Integer.compare(offset2, offset1);
-                    })
-                    .toList();
+            final List<DependencyRow> sortedRows = sortUpdatedRowsReversed(outdatedRows);
 
-            // Apply all updates in a single write action
             WriteCommandAction.runWriteCommandAction(project, "Update All Dependencies", null, () -> {
-                for (DependencyTableModel.DependencyRow row : sortedRows) {
+                for (DependencyRow row : sortedRows) {
                     VersionReplacer.applyUpdateInWriteAction(project, row.dependency(), row.latestVersion().version());
                 }
             });
 
-            // Commit document changes to PSI before refreshing
             PsiDocumentManager.getInstance(project).commitAllDocuments();
             refreshDependencies();
         }
     }
 
-    // Action classes
     private class RefreshAction extends AnAction {
         RefreshAction() {
             super("Refresh", "Refresh dependency list", AllIcons.Actions.Refresh);
@@ -480,6 +410,4 @@ public class DependencyOverviewPanel extends JPanel {
         }
     }
 
-    private record DependencyWithVersion(DependencyInfo dependency, VersionCandidate latestVersion) {
-    }
 }

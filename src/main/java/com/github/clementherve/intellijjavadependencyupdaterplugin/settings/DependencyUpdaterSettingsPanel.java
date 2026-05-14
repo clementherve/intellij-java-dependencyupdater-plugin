@@ -111,9 +111,7 @@ public class DependencyUpdaterSettingsPanel {
                 (DependencyUpdaterSettings.TriggerMode) triggerModeComboBox.getSelectedItem();
         if (selectedMode != null && selectedMode != settings.getTriggerMode()) return true;
 
-        if (!versionFilterRegexField.getText().equals(settings.getVersionFilterRegex())) return true;
-
-        return false;
+        return !versionFilterRegexField.getText().equals(settings.getVersionFilterRegex());
     }
 
     public void apply() {

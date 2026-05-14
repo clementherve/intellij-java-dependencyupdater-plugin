@@ -16,6 +16,7 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,7 +60,7 @@ public final class DependencyUpdateService {
     @Nullable
     public VersionCandidate checkForUpdate(@NotNull DependencyInfo dependency) {
         try {
-            List<String> versions = getVersions(dependency.group(), dependency.artifact());
+            List<String> versions = fetchVersionsAndSaveThemToCache(dependency.group(), dependency.artifact());
             if (versions.isEmpty()) {
                 return null;
             }
@@ -152,7 +153,7 @@ public final class DependencyUpdateService {
             public void run(@NotNull ProgressIndicator indicator) {
                 try {
                     indicator.setText("Fetching versions from repository...");
-                    getVersions(dependency.group(), dependency.artifact());
+                    fetchVersionsAndSaveThemToCache(dependency.group(), dependency.artifact());
                     // next highlighting pass will show the marker
                 } catch (Exception e) {
                     LOGGER.debug("Background cache warmup failed for " + dependency.getFullCoordinates(), e);
@@ -169,7 +170,7 @@ public final class DependencyUpdateService {
      * @return a list of available versions
      */
     @NotNull
-    public List<String> getVersions(@NotNull String group, @NotNull String artifact) throws IOException {
+    public List<String> fetchVersionsAndSaveThemToCache(@NotNull String group, @NotNull String artifact) throws IOException {
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
 
         List<String> cachedVersions = cache.getVersions(group, artifact, settings.getCacheTtlMinutes());
@@ -193,36 +194,30 @@ public final class DependencyUpdateService {
      */
     @NotNull
     private List<String> fetchVersionsFromRepositories(@NotNull String group, @NotNull String artifact) throws IOException {
-        // Handle Gradle plugins (empty group) - use Plugin Portal
         if (group.isEmpty()) {
             return pluginPortalClient.fetchVersions(group, artifact);
         }
 
-        // Handle regular dependencies
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
 
-        // Try Nexus first if configured
-        if (!settings.getNexusBaseUrl().isEmpty()) {
+        final boolean isNexusConfigured = StringUtils.isNotBlank(settings.getNexusBaseUrl());
+
+        if (isNexusConfigured) {
             try {
                 VersionRepository nexusClient = createNexusClient();
                 List<String> versions = nexusClient.fetchVersions(group, artifact);
                 if (!versions.isEmpty()) {
-                    LOGGER.info("Fetched " + versions.size() + " versions from Nexus for " + group + ":" + artifact);
                     return versions;
                 }
             } catch (IOException e) {
-                LOGGER.warn("Nexus fetch failed for " + group + ":" + artifact + ", error: " + e.getMessage());
+                LOGGER.error("Nexus fetch failed for " + group + ":" + artifact + ", error: " + e.getMessage());
                 if (!settings.isFallbackToMavenCentral()) {
                     throw e;
                 }
             }
         }
 
-        // Fallback to Maven Central
-        LOGGER.info("Fetching from Maven Central for " + group + ":" + artifact);
-        List<String> versions = mavenCentralClient.fetchVersions(group, artifact);
-        LOGGER.info("Fetched " + versions.size() + " versions from Maven Central for " + group + ":" + artifact);
-        return versions;
+        return mavenCentralClient.fetchVersions(group, artifact);
     }
 
     /**
@@ -244,7 +239,7 @@ public final class DependencyUpdateService {
     @NotNull
     private VersionPolicy getFirstPolicy() {
         List<VersionPolicy> policies = DependencyUpdaterSettings.getInstance(project).getVersionPolicies();
-        return policies.isEmpty() ? VersionPolicy.createDefaultStablePolicy() : policies.get(0);
+        return policies.isEmpty() ? VersionPolicy.createDefaultStablePolicy() : policies.getFirst();
     }
 
     /**

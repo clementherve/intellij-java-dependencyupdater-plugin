@@ -2,6 +2,8 @@ package com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow;
 
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.DependencyInfo;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionCandidate;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow.model.DependencyRow;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -9,17 +11,24 @@ import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow.util.UpdateTypeUtil.determineUpdateType;
+
 /**
  * Table model for displaying dependencies in the tool window.
  */
 public class DependencyTableModel extends AbstractTableModel {
 
     private static final String[] COLUMN_NAMES = {
-        "Dependency",
-        "Current Version",
-        "Latest Version",
-        "Update Type",
+            "Dependency",
+            "Current Version",
+            "Latest Version",
+            "Update",
+            "Type"
     };
+    private static final String DEPENDENCY_TYPE_PLUGIN = "plugin";
+    private static final String DEPENDENCY_TYPE_DEPENDENCY = "dependency";
+    private static final String UP_TO_DATE = "Up to date";
+    private static final String OUTDATED = "Outdated";
 
     private final List<DependencyRow> rows = new ArrayList<>();
 
@@ -41,18 +50,18 @@ public class DependencyTableModel extends AbstractTableModel {
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
         DependencyRow row = rows.get(rowIndex);
+        final DependencyInfo dependency = row.dependency();
         return switch (columnIndex) {
             case 0 -> {
-                // For plugins (empty group), show just the plugin ID
-                if (row.dependency.group().isEmpty()) {
-                    yield row.dependency.artifact() + " (plugin)";
+                if (StringUtils.isBlank(dependency.group())) {
+                    yield dependency.artifact();
                 }
-                yield row.dependency.group() + ":" + row.dependency.artifact();
+                yield dependency.group() + ":" + dependency.artifact();
             }
-            case 1 -> row.dependency.currentVersion();
-            case 2 -> row.latestVersion != null ? row.latestVersion.version() : "N/A";
-            case 3 -> row.updateType != null ? row.updateType : "-";
-            case 4 -> row.status;
+            case 1 -> dependency.currentVersion();
+            case 2 -> row.latestVersion() != null ? row.latestVersion().version() : "-";
+            case 3 -> row.updateType() != null ? row.updateType() : "-";
+            case 4 -> dependency.group().isEmpty() ? DEPENDENCY_TYPE_PLUGIN : DEPENDENCY_TYPE_DEPENDENCY;
             default -> "";
         };
     }
@@ -62,9 +71,9 @@ public class DependencyTableModel extends AbstractTableModel {
         String updateType = null;
 
         if (latestVersion == null) {
-            status = "Up to date";
+            status = UP_TO_DATE;
         } else {
-            status = "Outdated";
+            status = OUTDATED;
             updateType = determineUpdateType(dependency.currentVersion(), latestVersion.version());
         }
 
@@ -89,60 +98,4 @@ public class DependencyTableModel extends AbstractTableModel {
     public List<DependencyRow> getAllRows() {
         return new ArrayList<>(rows);
     }
-
-    private String determineUpdateType(String currentVersion, String latestVersion) {
-        String[] currentParts = currentVersion.split("\\.");
-        String[] latestParts = latestVersion.split("\\.");
-
-        if (currentParts.length < 1 || latestParts.length < 1) {
-            return "Unknown";
-        }
-
-        try {
-            int currentMajor = Integer.parseInt(currentParts[0]);
-            int latestMajor = Integer.parseInt(latestParts[0]);
-
-            if (latestMajor > currentMajor) {
-                return "Major";
-            }
-
-            if (currentParts.length >= 2 && latestParts.length >= 2) {
-                int currentMinor = Integer.parseInt(currentParts[1]);
-                int latestMinor = Integer.parseInt(latestParts[1]);
-
-                if (latestMinor > currentMinor) {
-                    return "Minor";
-                }
-            }
-
-            if (currentParts.length >= 3 && latestParts.length >= 3) {
-                int currentPatch = Integer.parseInt(currentParts[2].split("-")[0]); // Handle versions like 1.2.3-beta
-                int latestPatch = Integer.parseInt(latestParts[2].split("-")[0]);
-
-                if (latestPatch > currentPatch) {
-                    return "Patch";
-                }
-            }
-
-            return "Other";
-        } catch (NumberFormatException e) {
-            return "Unknown";
-        }
-    }
-
-    /**
-         * Represents a row in the dependency table.
-         */
-        public record DependencyRow(DependencyInfo dependency, VersionCandidate latestVersion, String status,
-                                    String updateType) {
-            public DependencyRow(@NotNull DependencyInfo dependency,
-                                 @Nullable VersionCandidate latestVersion,
-                                 @NotNull String status,
-                                 @Nullable String updateType) {
-                this.dependency = dependency;
-                this.latestVersion = latestVersion;
-                this.status = status;
-                this.updateType = updateType;
-            }
-        }
 }

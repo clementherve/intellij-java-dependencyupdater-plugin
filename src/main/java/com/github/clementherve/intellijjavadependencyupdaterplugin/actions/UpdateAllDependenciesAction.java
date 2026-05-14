@@ -17,11 +17,12 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.SmartPsiElementPointer;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Action to update all outdated dependencies in the current file.
@@ -47,19 +48,13 @@ public class UpdateAllDependenciesAction extends AnAction {
         }
 
         ProgressManager.getInstance().run(new Task.Backgroundable(project, "Checking for dependency updates", true) {
-            private final Map<DependencyInfo, VersionCandidate> updates = new HashMap<>();
+            private final Map<DependencyInfo, VersionCandidate> dependenciesWithUpdateCandidates = new HashMap<>();
 
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setText("Parsing dependencies...");
 
-                List<DependencyInfo> dependencies = ReadAction.compute(() -> {
-                    DependencyParser parser = DependencyParserFactory.getParser(file);
-                    if (parser == null) {
-                        return new ArrayList<>();
-                    }
-                    return parser.parseDependencies(file);
-                });
+                List<DependencyInfo> dependencies = safelyParseDependencies(file);
 
                 if (dependencies.isEmpty()) {
                     return;
@@ -83,14 +78,14 @@ public class UpdateAllDependenciesAction extends AnAction {
                     }
 
                     if (candidate != null) {
-                        updates.put(dependency, candidate);
+                        dependenciesWithUpdateCandidates.put(dependency, candidate);
                     }
                 }
             }
 
             @Override
             public void onSuccess() {
-                if (updates.isEmpty()) {
+                if (dependenciesWithUpdateCandidates.isEmpty()) {
                     Messages.showInfoMessage(
                             project,
                             "All dependencies are up to date!",
@@ -103,58 +98,58 @@ public class UpdateAllDependenciesAction extends AnAction {
                 int result = Messages.showOkCancelDialog(
                         project,
                         message.toString(),
-                        "Update " + updates.size() + " Dependencies",
+                        "Update " + dependenciesWithUpdateCandidates.size() + " dependencies",
                         "Update All",
                         "Cancel",
                         Messages.getQuestionIcon()
                 );
 
                 if (result == Messages.OK) {
-                    // Sort updates in reverse order (bottom to top) to avoid position invalidation
-                    List<Map.Entry<DependencyInfo, VersionCandidate>> sortedUpdates = updates.entrySet().stream()
-                            .sorted((e1, e2) -> {
-                                int offset1 = e1.getKey().psiElementPointer() != null &&
-                                             e1.getKey().psiElementPointer().getElement() != null
-                                        ? e1.getKey().psiElementPointer().getElement().getTextOffset()
-                                        : 0;
-                                int offset2 = e2.getKey().psiElementPointer() != null &&
-                                             e2.getKey().psiElementPointer().getElement() != null
-                                        ? e2.getKey().psiElementPointer().getElement().getTextOffset()
-                                        : 0;
-                                return Integer.compare(offset2, offset1);
-                            })
-                            .toList();
+                    List<Map.Entry<DependencyInfo, VersionCandidate>> sortedUpdates = sortRowsToUpdateInReverseOrder(dependenciesWithUpdateCandidates);
 
-                    // Apply all updates in a single write action
-                    WriteCommandAction.runWriteCommandAction(project, "Update All Dependencies", null, () -> {
-                        for (Map.Entry<DependencyInfo, VersionCandidate> entry : sortedUpdates) {
-                            VersionReplacer.applyUpdateInWriteAction(
-                                    project,
-                                    entry.getKey(),
-                                    entry.getValue().version()
-                            );
-                        }
-                    });
+                    applyUpdateDependenciesToDocument(sortedUpdates, project);
 
                     Messages.showInfoMessage(
                             project,
-                            "Successfully updated " + updates.size() + " dependencies!",
+                            "Successfully updated " + dependenciesWithUpdateCandidates.size() + " dependencies!",
                             "Update All Dependencies"
                     );
                 }
             }
 
             @NotNull
+            private List<Map.Entry<DependencyInfo, VersionCandidate>> sortRowsToUpdateInReverseOrder(Map<DependencyInfo, VersionCandidate> updates) {
+                return updates.entrySet().stream()
+                        .sorted((e1, e2) -> {
+                            final SmartPsiElementPointer<PsiElement> psiElementPointer1 = e1.getKey().psiElementPointer();
+                            final SmartPsiElementPointer<PsiElement> psiElementPointer2 = e2.getKey().psiElementPointer();
+
+                            final PsiElement psiElement1 = psiElementPointer1 != null ? psiElementPointer1.getElement() : null;
+                            final PsiElement psiElement2 = psiElementPointer2 != null ? psiElementPointer2.getElement() : null;
+
+                            int offset1 = psiElement1 != null ? psiElement1.getTextOffset() : 0;
+                            int offset2 = psiElement2 != null ? psiElement2.getTextOffset() : 0;
+                            return Integer.compare(offset2, offset1);
+                        })
+                        .toList();
+            }
+
+            @NotNull
             private StringBuilder getMessage() {
                 StringBuilder message = new StringBuilder("The following dependencies will be updated:\n\n");
-                for (Map.Entry<DependencyInfo, VersionCandidate> entry : updates.entrySet()) {
-                    DependencyInfo dep = entry.getKey();
-                    VersionCandidate candidate = entry.getValue();
-                    message.append(String.format("%s: %s → %s\n",
-                            dep.artifact(),
-                            dep.currentVersion(),
-                            candidate.version()));
+
+                for (Map.Entry<DependencyInfo, VersionCandidate> entry : dependenciesWithUpdateCandidates.entrySet()) {
+                    DependencyInfo dependencyInfo = entry.getKey();
+                    VersionCandidate versionCandidate = entry.getValue();
+
+                    final String informationMessage = String.format("%s: %s → %s\n",
+                            dependencyInfo.artifact(),
+                            dependencyInfo.currentVersion(),
+                            versionCandidate.version());
+
+                    message.append(informationMessage);
                 }
+
                 return message;
             }
 
@@ -164,6 +159,28 @@ public class UpdateAllDependenciesAction extends AnAction {
                         project,
                         "Failed to check for updates: " + error.getMessage(),
                         "Update All Dependencies"
+                );
+            }
+        });
+    }
+
+    private static List<DependencyInfo> safelyParseDependencies(final PsiFile file) {
+        return ReadAction.compute(() -> {
+            DependencyParser dependencyParser = DependencyParserFactory.getParser(file);
+            if (dependencyParser == null) {
+                return new ArrayList<>();
+            }
+            return dependencyParser.parseDependencies(file);
+        });
+    }
+
+    private static void applyUpdateDependenciesToDocument(final List<Map.Entry<DependencyInfo, VersionCandidate>> sortedUpdates, final Project project) {
+        WriteCommandAction.runWriteCommandAction(project, "Update All Dependencies", null, () -> {
+            for (Map.Entry<DependencyInfo, VersionCandidate> entry : sortedUpdates) {
+                VersionReplacer.applyUpdateInWriteAction(
+                        project,
+                        entry.getKey(),
+                        entry.getValue().version()
                 );
             }
         });
