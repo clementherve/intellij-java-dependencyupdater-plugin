@@ -110,14 +110,6 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
         state.versionPolicies = new ArrayList<>(versionPolicies);
     }
 
-    public boolean isShowGutterIcons() {
-        return state.showGutterIcons;
-    }
-
-    public void setShowGutterIcons(boolean showGutterIcons) {
-        state.showGutterIcons = showGutterIcons;
-    }
-
     public boolean isShowInlayHints() {
         return state.showInlayHints;
     }
@@ -169,7 +161,6 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
         public boolean fallbackToMavenCentral = true;
         public int cacheTtlMinutes = 30;
         public List<VersionPolicy> versionPolicies = new ArrayList<>();
-        public boolean showGutterIcons = true;
         public boolean showInlayHints = true;
         public TriggerMode triggerMode = TriggerMode.ON_OPEN;
         public String versionFilterRegex = "";

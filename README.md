@@ -89,7 +89,6 @@ After installation, configure the plugin:
 2. Configure:
    - **Trigger Mode**: When to check for updates (On project open, On file save, or Manual)
    - **Cache TTL**: How long to cache version information (default: 30 minutes)
-   - **Show gutter icons**: Display icons in the editor gutter for outdated dependencies
    - **Show inlay hints**: Display inline version information
    - **Version Policies**: Rules for filtering versions (e.g., stable only, exclude patterns)
    - **Nexus Repository**: Optional custom repository URL, username, and password
