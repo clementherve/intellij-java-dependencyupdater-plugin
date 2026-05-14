@@ -4,6 +4,8 @@
 
 ## Overview
 
+<img src="./media/screenshot-1.png">
+
 The Gradle Dependency Updater plugin helps you keep your Gradle dependencies up to date by:
 
 - Automatically detecting outdated dependencies in `build.gradle` files
@@ -17,41 +19,6 @@ The Gradle Dependency Updater plugin helps you keep your Gradle dependencies up 
 - Smart caching to minimize network requests
 - Configurable version policies (stable only, include/exclude patterns)
 - Support for Maven Central and private Nexus repositories
-
-## Features
-
-### Visual Update Indicators
-When you open a `build.gradle`, the plugin automatically checks for outdated dependencies and displays inline hints next to each dependency showing the latest available version.
-
-### Quick-Fix Intentions
-Use Alt+Enter (or Option+Enter on Mac) on any dependency to see update options:
-- Update to latest patch (e.g., 1.2.3 → 1.2.4)
-- Update to latest minor (e.g., 1.2.3 → 1.3.0)
-- Update to latest major (e.g., 1.2.3 → 2.0.0)
-
-### Batch Updates
-Click the "Update All Dependencies" button in the editor banner (at the top of build.gradle files) to update all outdated dependencies at once. The plugin will show a confirmation dialog before making any changes.
-
-### Dependency Overview Tool Window
-Access the "Dependency Overview" tool window (bottom panel) to see all dependencies across your entire project:
-- View all dependencies in a sortable table
-- See current version, latest version, and update type (patch/minor/major)
-- **Pick specific versions**: Select a dependency and click "Pick Version" to choose from all available versions
-- Update selected dependencies or update all at once
-- Double-click any dependency to navigate to its declaration in the build file
-- Refresh the list to check for new updates
-
-### Variable Support
-The plugin supports Gradle variables defined in `ext` blocks:
-```groovy
-ext {
-    spring_version = '3.5.6'
-}
-dependencies {
-    implementation "org.springframework.boot:spring-boot-starter-mustache:$spring_version"
-}
-```
-When updating a variable-based dependency, the plugin updates the variable definition in the `ext` block.
 
 ## Getting Started
 
@@ -76,40 +43,12 @@ When updating a variable-based dependency, the plugin updates the variable defin
 
    This creates a plugin distribution in `build/distributions/`.
 
-   To skip searchable options generation (faster builds):
-   ```bash
-   ./gradlew buildPlugin -x buildSearchableOptions
-   ```
-
-### Running Tests
-
-Run all tests:
-```bash
-./gradlew test
-```
-
-Run specific test class:
-```bash
-./gradlew test --tests "com.github.clementherve.intellijjavadependencyupdaterplugin.psi.GradlePsiParserTest"
-```
-
-Run tests with verbose output:
-```bash
-./gradlew test --info
-```
-
-View test results:
-- HTML report: `build/reports/tests/test/index.html`
-- XML results: `build/test-results/test/`
-
 ### Running in Development Mode
 
 To test the plugin in a sandboxed IntelliJ IDEA instance:
 ```bash
 ./gradlew runIde
 ```
-
-This starts a fresh IntelliJ IDEA instance with the plugin installed. The IDE will use a separate configuration directory so your main IDE settings remain untouched.
 
 ## Installation
 
