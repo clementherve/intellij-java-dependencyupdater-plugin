@@ -1,7 +1,7 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.cache;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
-import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -11,13 +11,13 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Thread-safe cache for dependency version information with TTL support.
  */
-@Service(Service.Level.PROJECT)
+@Service(Service.Level.APP)
 public final class VersionCache {
-    
+
     private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
 
-    public static VersionCache getInstance(@NotNull Project project) {
-        return project.getService(VersionCache.class);
+    public static VersionCache getInstance() {
+        return ApplicationManager.getApplication().getService(VersionCache.class);
     }
 
     /**

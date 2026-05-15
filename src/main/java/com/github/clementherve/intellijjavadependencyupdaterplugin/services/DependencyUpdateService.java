@@ -40,7 +40,7 @@ public final class DependencyUpdateService {
 
     public DependencyUpdateService(@NotNull Project project) {
         this.project = project;
-        this.cache = VersionCache.getInstance(project);
+        this.cache = VersionCache.getInstance();
         this.policyEvaluator = new VersionPolicyEvaluator();
         this.mavenCentralClient = new MavenCentralClient();
         this.pluginPortalClient = new GradlePluginPortalClient();

@@ -42,6 +42,7 @@ public class GradlePsiParser implements DependencyParser {
     private static final Pattern DEPENDENCY_PATTERN = Pattern.compile(
             "([^:]+):([^:]+):([^:]+)?"
     );
+
     private static final String EXT_BLOCK_CONSTANT = "ext";
 
     @Override
@@ -87,30 +88,30 @@ public class GradlePsiParser implements DependencyParser {
      */
     private DependencyInfo parsePluginFromMethodCall(@NotNull GrMethodCall methodCall, @NotNull PsiFile psiFile) {
         // Get the actual method name (not the full text which includes the chain)
-        PsiElement invokedExpr = methodCall.getInvokedExpression();
+        PsiElement invokedExpression = methodCall.getInvokedExpression();
         String methodName;
 
         // Extract just the method name from the reference
-        if (invokedExpr instanceof GrReferenceExpression) {
-            methodName = ((GrReferenceExpression) invokedExpr).getReferenceName();
+        if (invokedExpression instanceof GrReferenceExpression) {
+            methodName = ((GrReferenceExpression) invokedExpression).getReferenceName();
         } else {
-            methodName = invokedExpr.getText();
+            methodName = invokedExpression.getText();
         }
 
         // Check if this is a 'version' method call that wraps an 'id' call
         if ("version".equals(methodName)) {
             // This is the outer 'version' call in: id 'plugin.id' version 'version'
-            GrArgumentList versionArgList = methodCall.getArgumentList();
-            GrExpression[] versionArgs = versionArgList.getExpressionArguments();
+            GrArgumentList argumentList = methodCall.getArgumentList();
+            GrExpression[] versionArguments = argumentList.getExpressionArguments();
 
-            if (versionArgs.length > 0 && versionArgs[0] instanceof GrLiteral) {
-                Object versionValue = ((GrLiteral) versionArgs[0]).getValue();
+            if (versionArguments.length > 0 && versionArguments[0] instanceof GrLiteral) {
+                Object versionValue = ((GrLiteral) versionArguments[0]).getValue();
 
                 if (versionValue instanceof final String version) {
-                    PsiElement versionElement = versionArgs[0];
+                    PsiElement versionElement = versionArguments[0];
 
                     // The invoked expression should be a reference expression with a qualifier that is the 'id' call
-                    if (invokedExpr instanceof final GrReferenceExpression refExpr) {
+                    if (invokedExpression instanceof final GrReferenceExpression refExpr) {
                         GrExpression qualifier = refExpr.getQualifierExpression();
 
                         if (qualifier instanceof final GrMethodCall idCall) {
@@ -148,12 +149,12 @@ public class GradlePsiParser implements DependencyParser {
                                         SmartPsiElementPointer<PsiElement> pointer = SmartPointerManager.createPointer(versionElement);
 
                                         return new DependencyInfo(
-                                                "",              // empty group for plugins
-                                                pluginId,        // artifact is the plugin ID
+                                                "", // empty group for plugins
+                                                pluginId, // artifact is the plugin ID
                                                 version,
-                                                "plugin",        // configuration name
+                                                "plugin",
                                                 pointer,
-                                                false,           // plugins don't use variables
+                                                false,
                                                 null
                                         );
                                     }
