@@ -2,7 +2,7 @@
 
 # Gradle Dependency Updater Changelog
 
-## [Unreleased]
+## 0.0.1
 
 Initial release of the plugin
 
@@ -10,3 +10,10 @@ Initial release of the plugin
 - Main feature: outdated dependency detection and underlining from a build.gradle.
 - Side panel to manage build.gradle dependencies.
 - Settings panel to configure the plugin.
+
+## 0.0.2
+
+### Added
+- Added translations for French
+- Added force refresh
+- Added app-level caching
