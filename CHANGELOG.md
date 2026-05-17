@@ -2,6 +2,8 @@
 
 # Gradle Dependency Updater Changelog
 
+## [Unreleased]
+
 ## 0.0.1
 
 Initial release of the plugin
@@ -17,3 +19,8 @@ Initial release of the plugin
 - Added translations for French
 - Added force refresh
 - Added app-level caching
+
+## 0.0.3
+
+### Added
+- Added filtering for Nexus repository
