@@ -16,6 +16,7 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -73,7 +74,7 @@ public final class DependencyUpdateService {
                     versions,
                     dependency.currentVersion(),
                     policy,
-                    getRepositorySource(dependency.group()),
+                    getRepositorySource(dependency.group(), dependency.artifact()),
                     excludeRegex
             );
         } catch (Exception e) {
@@ -111,7 +112,7 @@ public final class DependencyUpdateService {
                 cachedVersions,
                 dependency.currentVersion(),
                 policy,
-                getRepositorySource(dependency.group()),
+                getRepositorySource(dependency.group(), dependency.artifact()),
                 excludeRegex
         );
     }
@@ -138,7 +139,7 @@ public final class DependencyUpdateService {
         }
 
         VersionPolicy policy = getFirstPolicy();
-        return policyEvaluator.evaluate(cachedVersions, policy, getRepositorySource(dependency.group()));
+        return policyEvaluator.evaluate(cachedVersions, policy, getRepositorySource(dependency.group(), dependency.artifact()));
     }
 
     /**
@@ -204,16 +205,22 @@ public final class DependencyUpdateService {
         final boolean isNexusConfigured = StringUtils.isNotBlank(settings.getNexusBaseUrl());
 
         if (isNexusConfigured) {
-            try {
-                VersionRepository nexusClient = createNexusClient();
-                List<String> versions = nexusClient.fetchVersions(group, artifact);
-                if (!versions.isEmpty()) {
-                    return versions;
-                }
-            } catch (IOException e) {
-                LOGGER.error("Nexus fetch failed for " + group + ":" + artifact + ", error: " + e.getMessage());
-                if (!settings.isFallbackToMavenCentral()) {
-                    throw e;
+            String nexusDependencyRegex = settings.getNexusDependencyRegex();
+            boolean shouldUseNexus = nexusDependencyRegex.isEmpty() || (group + ":" + artifact).matches(nexusDependencyRegex);
+
+            if (shouldUseNexus) {
+                try {
+                    VersionRepository nexusClient = createNexusClient();
+                    List<String> versions = nexusClient.fetchVersions(group, artifact);
+
+                    if (CollectionUtils.isNotEmpty(versions)) {
+                        return versions;
+                    }
+                } catch (IOException e) {
+                    LOGGER.error("Nexus fetch failed for " + group + ":" + artifact + ", error: " + e.getMessage());
+                    if (!settings.isFallbackToMavenCentral()) {
+                        throw e;
+                    }
                 }
             }
         }
@@ -243,24 +250,24 @@ public final class DependencyUpdateService {
         return policies.isEmpty() ? VersionPolicy.createDefaultStablePolicy() : policies.getFirst();
     }
 
-    /**
-     * Gets the repository source name for display purposes.
-     *
-     * @param group the dependency group (empty for plugins)
-     */
     @NotNull
-    private String getRepositorySource(@NotNull String group) {
-        // Plugins (empty group) use Gradle Plugin Portal
+    private String getRepositorySource(@NotNull String group, @NotNull String artifact) {
         if (group.isEmpty()) {
-            return "Gradle Plugin Portal";
+            return "Gradle Plugin Portal"; // todo: create a enum
         }
 
-        // Regular dependencies use Nexus or Maven Central
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
-        if (!settings.getNexusBaseUrl().isEmpty()) {
-            return "Nexus";
+        if (StringUtils.isNotBlank(settings.getNexusBaseUrl())) {
+            String nexusDependencyRegex = settings.getNexusDependencyRegex();
+
+            boolean matchesNexusFilter = nexusDependencyRegex.isEmpty() || (group + ":" + artifact).matches(nexusDependencyRegex);
+
+            if (matchesNexusFilter) {
+                return "Nexus"; // todo: create a enum
+            }
         }
-        return "Maven Central";
+
+        return "Maven Central"; // todo: create a enum
     }
 
     /**
@@ -291,7 +298,7 @@ public final class DependencyUpdateService {
                 versions,
                 dependency.currentVersion(),
                 policy,
-                getRepositorySource(dependency.group()),
+                getRepositorySource(dependency.group(), dependency.artifact()),
                 excludeRegex
         );
     }

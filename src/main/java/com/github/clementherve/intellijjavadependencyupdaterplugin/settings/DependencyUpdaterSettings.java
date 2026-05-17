@@ -136,6 +136,15 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
         state.versionFilterRegex = versionFilterRegex;
     }
 
+    @NotNull
+    public String getNexusDependencyRegex() {
+        return state.nexusDependencyRegex != null ? state.nexusDependencyRegex : "";
+    }
+
+    public void setNexusDependencyRegex(@NotNull String nexusDependencyRegex) {
+        state.nexusDependencyRegex = nexusDependencyRegex;
+    }
+
     public enum TriggerMode {
         ON_OPEN("On project open"),
         ON_SAVE("On file save"),
@@ -158,6 +167,7 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
     public static class State {
         public String nexusBaseUrl = "";
         public String nexusUsername = "";
+        public String nexusDependencyRegex = "";
         public boolean fallbackToMavenCentral = true;
         public int cacheTtlMinutes = 30;
         public List<VersionPolicy> versionPolicies = new ArrayList<>();

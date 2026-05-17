@@ -27,6 +27,7 @@ public class DependencyUpdaterSettingsPanel {
     private final JBTextField nexusBaseUrlField;
     private final JBTextField nexusUsernameField;
     private final JBPasswordField nexusPasswordField;
+    private final JBTextField nexusDependencyRegexField;
     private final JBCheckBox fallbackToMavenCentralCheckBox;
     private final JSpinner cacheTtlSpinner;
     private final JBCheckBox showInlayHintsCheckBox;
@@ -40,6 +41,7 @@ public class DependencyUpdaterSettingsPanel {
         nexusBaseUrlField = new JBTextField();
         nexusUsernameField = new JBTextField();
         nexusPasswordField = new JBPasswordField();
+        nexusDependencyRegexField = new JBTextField();
         fallbackToMavenCentralCheckBox = new JBCheckBox(DependencyUpdaterBundle.message("settings.fallbackToMavenCentral"));
 
         SpinnerNumberModel spinnerModel = new SpinnerNumberModel(30, 1, 1440, 5);
@@ -67,6 +69,8 @@ public class DependencyUpdaterSettingsPanel {
                 .addComponentToRightColumn(new JBLabel(DependencyUpdaterBundle.message("settings.nexus.urlExample")), 0)
                 .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.nexus.username")), nexusUsernameField, 1, false)
                 .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.nexus.password")), nexusPasswordField, 1, false)
+                .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.nexus.dependencyRegex")), nexusDependencyRegexField, 1, false)
+                .addComponentToRightColumn(new JBLabel(DependencyUpdaterBundle.message("settings.nexus.dependencyRegexHint")), 0)
                 .addComponent(fallbackToMavenCentralCheckBox, 1)
                 .addSeparator(5)
                 .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.cacheTtl")), cacheTtlSpinner, 1, false)
@@ -112,7 +116,9 @@ public class DependencyUpdaterSettingsPanel {
             return true;
         }
 
-        return !versionFilterRegexField.getText().equals(settings.getVersionFilterRegex());
+        if (!versionFilterRegexField.getText().equals(settings.getVersionFilterRegex())) return true;
+
+        return !nexusDependencyRegexField.getText().equals(settings.getNexusDependencyRegex());
     }
 
     public void apply() {
@@ -138,6 +144,7 @@ public class DependencyUpdaterSettingsPanel {
         }
 
         settings.setVersionFilterRegex(versionFilterRegexField.getText());
+        settings.setNexusDependencyRegex(nexusDependencyRegexField.getText());
     }
 
     public void reset() {
@@ -160,5 +167,6 @@ public class DependencyUpdaterSettingsPanel {
         showInlayHintsCheckBox.setSelected(settings.isShowInlayHints());
         triggerModeComboBox.setSelectedItem(settings.getTriggerMode());
         versionFilterRegexField.setText(settings.getVersionFilterRegex());
+        nexusDependencyRegexField.setText(settings.getNexusDependencyRegex());
     }
 }
