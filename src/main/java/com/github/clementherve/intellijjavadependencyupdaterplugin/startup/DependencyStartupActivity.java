@@ -6,7 +6,8 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.Dependenc
 import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.DependencyParserFactory;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.settings.DependencyUpdaterSettings;
-import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -82,7 +83,7 @@ public class DependencyStartupActivity implements ProjectActivity {
             indicator.setText(DependencyUpdaterBundle.message("cache.processingFile", file.getName()));
 
             try {
-                List<DependencyInfo> dependencies = ReadAction.compute(() -> {
+                List<DependencyInfo> dependencies = ApplicationManager.getApplication().runReadAction((Computable<List<DependencyInfo>>) () -> {
                     PsiFile psiFile = psiManager.findFile(file);
                     if (psiFile == null) {
                         return new ArrayList<>();

@@ -1,7 +1,9 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.util;
 
-import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectUtil;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileVisitor;
@@ -12,9 +14,9 @@ import java.util.List;
 
 public class FindBuildGradleFilesUtil {
     public static List<VirtualFile> findBuildGradleFilesInCurrentProject(Project project) {
-        return ReadAction.compute(() -> {
+        return ApplicationManager.getApplication().runReadAction((Computable<List<VirtualFile>>) () -> {
             List<VirtualFile> files = new ArrayList<>();
-            VirtualFile baseDir = project.getBaseDir(); // fixme: getBaseDir is deprecated
+            VirtualFile baseDir = ProjectUtil.guessProjectDir(project);
 
             if (baseDir != null) {
                 VfsUtilCore.visitChildrenRecursively(baseDir, new VirtualFileVisitor<Void>() {

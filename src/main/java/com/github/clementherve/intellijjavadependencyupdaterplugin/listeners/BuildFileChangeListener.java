@@ -6,7 +6,8 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.psi.Dependenc
 import com.github.clementherve.intellijjavadependencyupdaterplugin.services.DependencyUpdateService;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.settings.DependencyUpdaterSettings;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SupportedFilesUtil;
-import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
@@ -83,7 +84,7 @@ public class BuildFileChangeListener implements FileDocumentManagerListener {
 
         try {
             // Parse dependencies in read action
-            List<DependencyInfo> dependencies = ReadAction.compute(() -> {
+            List<DependencyInfo> dependencies = ApplicationManager.getApplication().runReadAction((Computable<List<DependencyInfo>>) () -> {
                 PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
                 if (psiFile == null) {
                     return List.of();
@@ -148,7 +149,7 @@ public class BuildFileChangeListener implements FileDocumentManagerListener {
             }
 
             // Check if file is in project scope
-            if (ReadAction.compute(() -> {
+            if (ApplicationManager.getApplication().runReadAction((Computable<Boolean>) () -> {
                 PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
                 return psiFile != null;
             })) {

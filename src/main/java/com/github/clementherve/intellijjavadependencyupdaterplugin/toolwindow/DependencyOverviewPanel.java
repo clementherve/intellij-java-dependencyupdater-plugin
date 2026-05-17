@@ -16,7 +16,8 @@ import com.intellij.openapi.actionSystem.ActionToolbar;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
-import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
@@ -176,7 +177,7 @@ public class DependencyOverviewPanel extends JPanel {
                     SwingUtilities.invokeLater(() -> loadingLabel.setText(statusText));
 
                     try {
-                        List<DependencyInfo> dependencies = ReadAction.compute(() -> {
+                        List<DependencyInfo> dependencies = ApplicationManager.getApplication().runReadAction((Computable<List<DependencyInfo>>) () -> {
                             PsiFile psiFile = psiManager.findFile(file);
                             if (psiFile == null) {
                                 return List.of();
