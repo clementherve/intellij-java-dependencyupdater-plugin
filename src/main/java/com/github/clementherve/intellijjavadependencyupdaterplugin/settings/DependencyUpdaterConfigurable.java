@@ -29,6 +29,7 @@ public class DependencyUpdaterConfigurable implements Configurable {
     @Override
     public JComponent createComponent() {
         mySettingsPanel = new DependencyUpdaterSettingsPanel(myProject);
+        mySettingsPanel.reset();
         return mySettingsPanel.getPanel();
     }
 

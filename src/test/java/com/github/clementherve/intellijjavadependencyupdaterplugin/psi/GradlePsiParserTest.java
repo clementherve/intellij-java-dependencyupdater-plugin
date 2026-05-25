@@ -95,7 +95,7 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
                 }
                 
                 dependencies {
-                    implementation "com.google.guava:guava:$guavaVersion"
+                implementation "com.google.guava:guava:$guavaVersion"
                     implementation "fr.test.extension:extension:${test_version}"
                     api 'org.apache.commons:commons-lang3:3.12.0'
                 }
