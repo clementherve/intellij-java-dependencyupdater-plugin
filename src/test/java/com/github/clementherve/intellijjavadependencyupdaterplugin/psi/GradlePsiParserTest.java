@@ -91,10 +91,12 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
         String content = """
                 ext {
                     guavaVersion = '31.1-jre'
+                    test_version = '3.12.0'
                 }
                 
                 dependencies {
                     implementation "com.google.guava:guava:$guavaVersion"
+                    implementation "fr.test.extension:extension:${test_version}"
                     api 'org.apache.commons:commons-lang3:3.12.0'
                 }
                 """;
@@ -104,14 +106,27 @@ public class GradlePsiParserTest extends BasePlatformTestCase {
 
         List<DependencyInfo> dependencies = parser.parseDependencies(file);
 
-        assertEquals(2, dependencies.size());
+        assertEquals(3, dependencies.size());
 
         DependencyInfo firstDependency = dependencies.getFirst();
         assertEquals("com.google.guava", firstDependency.group());
         assertEquals("guava", firstDependency.artifact());
-        assertTrue(firstDependency.isVersionVariable()); // todo: investigate why it's false
+        assertTrue(firstDependency.isVersionVariable());
         assertEquals("guavaVersion", firstDependency.variableName());
         assertEquals("31.1-jre", firstDependency.currentVersion());
+
+        DependencyInfo secondDependency = dependencies.get(1);
+        assertEquals("fr.test.extension", secondDependency.group());
+        assertEquals("extension", secondDependency.artifact());
+        assertTrue(secondDependency.isVersionVariable());
+        assertEquals("test_version", secondDependency.variableName());
+        assertEquals("3.12.0", secondDependency.currentVersion());
+
+        DependencyInfo thirdDependency = dependencies.get(2);
+        assertEquals("org.apache.commons", thirdDependency.group());
+        assertEquals("commons-lang3", thirdDependency.artifact());
+        assertEquals("3.12.0", thirdDependency.currentVersion());
+        assertFalse(thirdDependency.isVersionVariable());
 
     }
 

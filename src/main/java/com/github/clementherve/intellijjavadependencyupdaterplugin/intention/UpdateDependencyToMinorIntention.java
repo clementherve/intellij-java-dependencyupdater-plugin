@@ -33,8 +33,7 @@ public class UpdateDependencyToMinorIntention extends PsiElementBaseIntentionAct
     }
 
     @Override
-    public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element)
-            throws IncorrectOperationException {
+    public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element) throws IncorrectOperationException {
         PsiFile file = element.getContainingFile();
         if (file == null) {
             return;
