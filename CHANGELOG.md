@@ -24,3 +24,8 @@ Initial release of the plugin
 
 ### Added
 - Added filtering for Nexus repository
+
+### Fix
+- Settings values not properly showing after saving
+- support for ${variable} format in gstring
+- Removed deprecated dependencies
