@@ -74,7 +74,6 @@ public class DependencyAnnotator implements Annotator {
             VersionCandidate candidate = service.getFromCache(dependency);
 
             if (candidate == null) {
-                service.scheduleCacheWarmup(dependency);
                 break;
             }
 
