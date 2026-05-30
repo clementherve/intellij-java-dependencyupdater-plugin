@@ -29,3 +29,12 @@ Initial release of the plugin
 - Settings values not properly showing after saving
 - support for ${variable} format in gstring
 - Removed deprecated dependencies
+
+## 0.0.4
+
+### Added
+- Added search bar in extension panel to filter dependencies
+- Added right click action on dependency item in extension panel
+
+### Fix
+- Optimised refresh and parsing
