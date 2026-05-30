@@ -116,10 +116,20 @@ public class DependencyOverviewPanel extends JPanel {
                 }
 
                 if (evt.getClickCount() == 1 && evt.getButton() == MouseEvent.BUTTON3) {
-                    // todo: open a contextual menu to pick the dependency version
-                    DependencyRow row = null; // todo: select the correct row
+                    int clickedRow = table.rowAtPoint(evt.getPoint());
+                        if (clickedRow < 0) {
+                        return;
+                    }
+                    table.setRowSelectionInterval(clickedRow, clickedRow);
+                    int modelRow = table.convertRowIndexToModel(clickedRow);
+                    DependencyRow row = tableModel.getRow(modelRow);
                     DependencyUpdateService service = DependencyUpdateService.getInstance(project);
                     String selectedVersion = VersionPickerDialog.pickVersion(project, row.dependency(), service);
+                    if (selectedVersion != null) {
+                        VersionReplacer.applyUpdate(project, row.dependency(), selectedVersion);
+                        PsiDocumentManager.getInstance(project).commitAllDocuments();
+                        refreshDependencies(false);
+                    }
                 }
             }
         });
@@ -141,7 +151,6 @@ public class DependencyOverviewPanel extends JPanel {
         actionGroup.add(new RefreshAction());
         actionGroup.add(new UpdateAllAction());
         actionGroup.add(new UpdateSelectedAction());
-        actionGroup.add(new PickVersionAction());
 
         ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("DependencyOverview", actionGroup, true);
         toolbar.setTargetComponent(this);
