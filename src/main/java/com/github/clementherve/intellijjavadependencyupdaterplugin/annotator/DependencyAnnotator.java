@@ -14,6 +14,8 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.SmartPsiElementPointer;
+import com.intellij.psi.util.CachedValueProvider;
+import com.intellij.psi.util.CachedValuesManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -52,7 +54,8 @@ public class DependencyAnnotator implements Annotator {
             return;
         }
 
-        List<DependencyInfo> dependencies = parser.parseDependencies(file);
+        List<DependencyInfo> dependencies = CachedValuesManager.getCachedValue(file,
+                () -> CachedValueProvider.Result.create(parser.parseDependencies(file), file));
 
         DependencyUpdateService service = DependencyUpdateService.getInstance(project);
 
@@ -80,10 +83,7 @@ public class DependencyAnnotator implements Annotator {
             // todo: extract message to use i18n
             // todo: allow customising the severity
             String message = String.format("%s → %s available", dependency.artifact(), candidate.version());
-            annotation.newAnnotation(HighlightSeverity.WARNING, message)
-                    .range(element.getTextRange())
-                    .tooltip(message)
-                    .create();
+            annotation.newAnnotation(HighlightSeverity.WARNING, message).range(element.getTextRange()).tooltip(message).create();
             break;
         }
     }

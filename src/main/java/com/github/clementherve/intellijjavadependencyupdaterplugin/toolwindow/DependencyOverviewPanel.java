@@ -42,6 +42,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -110,8 +111,15 @@ public class DependencyOverviewPanel extends JPanel {
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                if (evt.getClickCount() == 2) {
+                if (evt.getClickCount() == 2 && evt.getButton() == MouseEvent.BUTTON1) {
                     navigateToSelectedDependency();
+                }
+
+                if (evt.getClickCount() == 1 && evt.getButton() == MouseEvent.BUTTON3) {
+                    // todo: open a contextual menu to pick the dependency version
+                    DependencyRow row = null; // todo: select the correct row
+                    DependencyUpdateService service = DependencyUpdateService.getInstance(project);
+                    String selectedVersion = VersionPickerDialog.pickVersion(project, row.dependency(), service);
                 }
             }
         });
@@ -312,11 +320,7 @@ public class DependencyOverviewPanel extends JPanel {
                 message.append(String.format("%s: %s → %s\n", row.dependency().artifact(), row.dependency().currentVersion(), row.latestVersion().version()));
             }
 
-            int result = Messages.showOkCancelDialog(project, message.toString(),
-                    DependencyUpdaterBundle.message("toolWindow.dialog.confirmUpdateTitle", rowsToUpdate.size()),
-                    DependencyUpdaterBundle.message("toolWindow.dialog.updateButton"),
-                    DependencyUpdaterBundle.message("toolWindow.dialog.cancelButton"),
-                    Messages.getQuestionIcon());
+            int result = Messages.showOkCancelDialog(project, message.toString(), DependencyUpdaterBundle.message("toolWindow.dialog.confirmUpdateTitle", rowsToUpdate.size()), DependencyUpdaterBundle.message("toolWindow.dialog.updateButton"), DependencyUpdaterBundle.message("toolWindow.dialog.cancelButton"), Messages.getQuestionIcon());
 
             if (result == Messages.OK) {
                 List<DependencyRow> sortedRows = sortUpdatedRowsReversed(rowsToUpdate);
@@ -360,11 +364,7 @@ public class DependencyOverviewPanel extends JPanel {
             message.append(String.format("%s: %s → %s\n", row.dependency().artifact(), row.dependency().currentVersion(), row.latestVersion().version()));
         }
 
-        int result = Messages.showOkCancelDialog(project, message.toString(),
-                DependencyUpdaterBundle.message("toolWindow.dialog.confirmUpdateTitle", outdatedRows.size()),
-                DependencyUpdaterBundle.message("toolWindow.dialog.updateAllButton"),
-                DependencyUpdaterBundle.message("toolWindow.dialog.cancelButton"),
-                Messages.getQuestionIcon());
+        int result = Messages.showOkCancelDialog(project, message.toString(), DependencyUpdaterBundle.message("toolWindow.dialog.confirmUpdateTitle", outdatedRows.size()), DependencyUpdaterBundle.message("toolWindow.dialog.updateAllButton"), DependencyUpdaterBundle.message("toolWindow.dialog.cancelButton"), Messages.getQuestionIcon());
 
         if (result == Messages.OK) {
             final List<DependencyRow> sortedRows = sortUpdatedRowsReversed(outdatedRows);
@@ -382,11 +382,7 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class RefreshAction extends AnAction {
         RefreshAction() {
-            super(
-                    DependencyUpdaterBundle.message("toolWindow.refresh"),
-                    DependencyUpdaterBundle.message("toolWindow.action.refresh.description"),
-                    AllIcons.Actions.Refresh
-            );
+            super(DependencyUpdaterBundle.message("toolWindow.refresh"), DependencyUpdaterBundle.message("toolWindow.action.refresh.description"), AllIcons.Actions.Refresh);
         }
 
         @Override
@@ -397,11 +393,7 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class UpdateAllAction extends AnAction {
         UpdateAllAction() {
-            super(
-                    DependencyUpdaterBundle.message("toolWindow.updateAll"),
-                    DependencyUpdaterBundle.message("toolWindow.action.updateAll.description"),
-                    AllIcons.Diff.MagicResolve
-            );
+            super(DependencyUpdaterBundle.message("toolWindow.updateAll"), DependencyUpdaterBundle.message("toolWindow.action.updateAll.description"), AllIcons.Diff.MagicResolve);
         }
 
         @Override
@@ -412,11 +404,7 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class UpdateSelectedAction extends AnAction {
         UpdateSelectedAction() {
-            super(
-                    DependencyUpdaterBundle.message("toolWindow.updateSelected"),
-                    DependencyUpdaterBundle.message("toolWindow.action.updateSelected.description"),
-                    AllIcons.Actions.Edit
-            );
+            super(DependencyUpdaterBundle.message("toolWindow.updateSelected"), DependencyUpdaterBundle.message("toolWindow.action.updateSelected.description"), AllIcons.Actions.Edit);
         }
 
         @Override
@@ -427,11 +415,7 @@ public class DependencyOverviewPanel extends JPanel {
 
     private class PickVersionAction extends AnAction {
         PickVersionAction() {
-            super(
-                    DependencyUpdaterBundle.message("toolWindow.pickVersion"),
-                    DependencyUpdaterBundle.message("toolWindow.action.pickVersion.description"),
-                    AllIcons.Actions.ShortcutFilter
-            );
+            super(DependencyUpdaterBundle.message("toolWindow.pickVersion"), DependencyUpdaterBundle.message("toolWindow.action.pickVersion.description"), AllIcons.Actions.ShortcutFilter);
         }
 
         @Override

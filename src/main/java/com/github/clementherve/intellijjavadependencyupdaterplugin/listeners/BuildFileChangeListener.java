@@ -41,12 +41,10 @@ public class BuildFileChangeListener implements FileDocumentManagerListener {
             return;
         }
 
-        // Check if this is a Gradle build file
         if (!SupportedFilesUtil.isSupportedFile(file.getName())) {
             return;
         }
 
-        // Find the project for this file
         Project project = findProjectForFile(file);
         if (project == null) {
             return;
@@ -56,13 +54,9 @@ public class BuildFileChangeListener implements FileDocumentManagerListener {
 
         // Only refresh cache if trigger mode is ON_SAVE
         if (settings.getTriggerMode() != DependencyUpdaterSettings.TriggerMode.ON_SAVE) {
-            LOG.debug("Skipping cache refresh on save - trigger mode is: " + settings.getTriggerMode());
             return;
         }
 
-        LOG.debug("Build file saved, refreshing dependency cache: " + file.getName());
-
-        // Refresh cache in background
         ProgressManager.getInstance().run(new Task.Backgroundable(project, "Refreshing dependency cache", false) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {

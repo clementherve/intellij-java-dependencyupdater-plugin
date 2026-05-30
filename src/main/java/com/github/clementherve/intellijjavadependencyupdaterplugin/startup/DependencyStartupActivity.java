@@ -40,8 +40,8 @@ public class DependencyStartupActivity implements ProjectActivity {
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
         DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
 
-        final boolean isTriggerModeOnOpen = settings.getTriggerMode() != DependencyUpdaterSettings.TriggerMode.ON_OPEN;
-        if (isTriggerModeOnOpen) {
+        final boolean isTriggerModeOnOpen = settings.getTriggerMode() == DependencyUpdaterSettings.TriggerMode.ON_OPEN;
+        if (!isTriggerModeOnOpen) {
             return null;
         }
 
