@@ -36,15 +36,20 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.SmartPsiElementPointer;
+import com.intellij.ui.SearchTextField;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.table.JBTable;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static com.github.clementherve.intellijjavadependencyupdaterplugin.util.FindBuildGradleFilesUtil.findBuildGradleFilesInCurrentProject;
 
@@ -63,6 +68,7 @@ public class DependencyOverviewPanel extends JPanel {
     private final JPanel contentPanel;
     private final CardLayout cardLayout;
     private final JLabel loadingLabel;
+    private TableRowSorter<DependencyTableModel> rowSorter;
 
     public DependencyOverviewPanel(@NotNull Project project) {
         super(new BorderLayout());
@@ -104,8 +110,17 @@ public class DependencyOverviewPanel extends JPanel {
         contentPanel.add(loadingPanel, CARD_LOADING);
     }
 
+    private void applyFilter(String text) {
+        if (text == null || text.isBlank()) {
+            rowSorter.setRowFilter(null);
+        } else {
+            rowSorter.setRowFilter(RowFilter.regexFilter("(?i)" + Pattern.quote(text), 0));
+        }
+    }
+
     private void setupTable() {
-        table.setAutoCreateRowSorter(true);
+        rowSorter = new TableRowSorter<>(tableModel);
+        table.setRowSorter(rowSorter);
         table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
         table.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -134,8 +149,18 @@ public class DependencyOverviewPanel extends JPanel {
             }
         });
 
+        SearchTextField searchField = new SearchTextField();
+        searchField.getTextEditor().getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { applyFilter(searchField.getText()); }
+            @Override public void removeUpdate(DocumentEvent e) { applyFilter(searchField.getText()); }
+            @Override public void changedUpdate(DocumentEvent e) { applyFilter(searchField.getText()); }
+        });
+
         JBScrollPane scrollPane = new JBScrollPane(table);
-        contentPanel.add(scrollPane, CARD_TABLE);
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.add(searchField, BorderLayout.NORTH);
+        tablePanel.add(scrollPane, BorderLayout.CENTER);
+        contentPanel.add(tablePanel, CARD_TABLE);
     }
 
     private void showLoading() {
