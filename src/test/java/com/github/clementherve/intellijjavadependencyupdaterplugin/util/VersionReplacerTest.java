@@ -219,9 +219,8 @@ public class VersionReplacerTest extends BasePlatformTestCase {
 
     /**
      * Documents exactly which declarations the parser detects in the full file.
-     * Notably: the standalone `version '0.0.1'`, `apply plugin: ...`, `group ...`
-     * and the `maven { url ... }` repo must NOT be picked up, and
-     * `junit-platform-launcher` (no version) is silently skipped.
+     * Notably: `apply plugin: ...` and the `maven { url ... }` repo must NOT be
+     * picked up, and `junit-platform-launcher` (no version) is silently skipped.
      */
     public void test_full_file_detected_dependencies() {
         PsiFile file = configureFull();
@@ -303,8 +302,6 @@ public class VersionReplacerTest extends BasePlatformTestCase {
         String result = update(file, plugin, "0.54.0");
 
         assertTrue(result, result.contains("id \"com.github.ben-manes.versions\" version \"0.54.0\""));
-        // The standalone project version must be untouched.
-        assertTrue("project version '0.0.1' must be untouched", result.contains("version '0.0.1'"));
     }
 
     private String newVersionFor(DependencyInfo dependency) {

@@ -3,5 +3,5 @@ package com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow.m
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.DependencyInfo;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionCandidate;
 
-public record DependencyWithVersion(DependencyInfo dependency, VersionCandidate latestVersion) {
+public record DependencyWithVersion(DependencyInfo dependency, VersionCandidate latestVersion, String projectName) {
 }

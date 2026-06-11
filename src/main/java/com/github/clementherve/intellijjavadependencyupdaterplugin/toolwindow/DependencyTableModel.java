@@ -19,7 +19,7 @@ import static com.github.clementherve.intellijjavadependencyupdaterplugin.toolwi
  */
 public class DependencyTableModel extends AbstractTableModel {
 
-    private static final int COLUMN_COUNT = 5;
+    private static final int COLUMN_COUNT = 6;
     private static final String UP_TO_DATE = "Up to date";
     private static final String OUTDATED = "Outdated";
     private static final String NO_VALUE = "-";
@@ -44,6 +44,7 @@ public class DependencyTableModel extends AbstractTableModel {
             case 2 -> DependencyUpdaterBundle.message("toolWindow.column.latestVersion");
             case 3 -> DependencyUpdaterBundle.message("toolWindow.column.update");
             case 4 -> DependencyUpdaterBundle.message("toolWindow.column.type");
+            case 5 -> DependencyUpdaterBundle.message("toolWindow.column.project");
             default -> "";
         };
     }
@@ -69,11 +70,13 @@ public class DependencyTableModel extends AbstractTableModel {
             case 4 -> dependency.group().isEmpty()
                     ? DependencyUpdaterBundle.message("toolWindow.type.plugin")
                     : DependencyUpdaterBundle.message("toolWindow.type.dependency");
+            case 5 -> row.projectName();
             default -> "";
         };
     }
 
-    public void addRow(@NotNull DependencyInfo dependency, @Nullable VersionCandidate latestVersion) {
+    public void addRow(@NotNull DependencyInfo dependency, @Nullable VersionCandidate latestVersion,
+                       @NotNull String projectName) {
         String status;
         String updateType = null;
 
@@ -84,7 +87,7 @@ public class DependencyTableModel extends AbstractTableModel {
             updateType = determineUpdateType(dependency.currentVersion(), latestVersion.version());
         }
 
-        rows.add(new DependencyRow(dependency, latestVersion, status, updateType));
+        rows.add(new DependencyRow(dependency, latestVersion, status, updateType, projectName));
     }
 
     public void clear() {
@@ -104,5 +107,9 @@ public class DependencyTableModel extends AbstractTableModel {
     @NotNull
     public List<DependencyRow> getAllRows() {
         return new ArrayList<>(rows);
+    }
+
+    public boolean hasMultipleProjects() {
+        return rows.stream().map(DependencyRow::projectName).distinct().count() > 1;
     }
 }

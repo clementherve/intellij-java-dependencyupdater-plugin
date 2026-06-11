@@ -44,6 +44,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.MouseEvent;
@@ -213,6 +214,7 @@ public class DependencyOverviewPanel extends JPanel {
                     }
 
                     VirtualFile file = buildFiles.get(i);
+                    String projectName = file.getParent() != null ? file.getParent().getName() : file.getName();
                     indicator.setFraction((double) i / buildFiles.size());
                     String statusText = DependencyUpdaterBundle.message("toolWindow.processingFile", file.getName());
                     indicator.setText(statusText);
@@ -248,7 +250,7 @@ public class DependencyOverviewPanel extends JPanel {
                             } else {
                                 latest = service.checkForUpdate(dependency);
                             }
-                            results.add(new DependencyWithVersion(dependency, latest));
+                            results.add(new DependencyWithVersion(dependency, latest, projectName));
                         }
 
                     } catch (Exception e) {
@@ -262,9 +264,10 @@ public class DependencyOverviewPanel extends JPanel {
                 SwingUtilities.invokeLater(() -> {
                     tableModel.clear();
                     for (DependencyWithVersion result : results) {
-                        tableModel.addRow(result.dependency(), result.latestVersion());
+                        tableModel.addRow(result.dependency(), result.latestVersion(), result.projectName());
                     }
                     tableModel.refresh();
+                    updateProjectColumnVisibility();
                     showTable();
 
                     if (results.isEmpty()) {
@@ -411,6 +414,19 @@ public class DependencyOverviewPanel extends JPanel {
 
             PsiDocumentManager.getInstance(project).commitAllDocuments();
             refreshDependencies(false);
+        }
+    }
+
+    private void updateProjectColumnVisibility() {
+        TableColumn projectColumn = table.getColumnModel().getColumn(5);
+        if (tableModel.hasMultipleProjects()) {
+            projectColumn.setMinWidth(50);
+            projectColumn.setMaxWidth(Integer.MAX_VALUE);
+            projectColumn.setPreferredWidth(120);
+        } else {
+            projectColumn.setMinWidth(0);
+            projectColumn.setMaxWidth(0);
+            projectColumn.setPreferredWidth(0);
         }
     }
 
