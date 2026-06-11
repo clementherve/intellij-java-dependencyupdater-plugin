@@ -33,7 +33,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Settings -->
-        <projectConfigurable
+        <applicationConfigurable
                 parentId="tools"
                 instance="com.github.clementherve.intellijjavadependencyupdaterplugin.settings.DependencyUpdaterConfigurable"
                 id="tools.dependency.updater"

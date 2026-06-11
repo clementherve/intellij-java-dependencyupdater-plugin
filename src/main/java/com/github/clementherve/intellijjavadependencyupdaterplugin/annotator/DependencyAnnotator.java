@@ -38,7 +38,7 @@ public class DependencyAnnotator implements Annotator {
         }
 
         Project project = element.getProject();
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
         final boolean dontShowInlineHints = !settings.isShowInlayHints();
         if (dontShowInlineHints) {
             return;

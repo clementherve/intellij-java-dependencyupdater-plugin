@@ -1,7 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.settings;
 
 import com.intellij.openapi.options.Configurable;
-import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,12 +11,7 @@ import javax.swing.*;
  */
 public class DependencyUpdaterConfigurable implements Configurable {
 
-    private final Project myProject;
     private DependencyUpdaterSettingsPanel mySettingsPanel;
-
-    public DependencyUpdaterConfigurable(Project project) {
-        this.myProject = project;
-    }
 
     @Nls
     @Override
@@ -28,7 +22,7 @@ public class DependencyUpdaterConfigurable implements Configurable {
     @Nullable
     @Override
     public JComponent createComponent() {
-        mySettingsPanel = new DependencyUpdaterSettingsPanel(myProject);
+        mySettingsPanel = new DependencyUpdaterSettingsPanel();
         mySettingsPanel.reset();
         return mySettingsPanel.getPanel();
     }

@@ -2,7 +2,6 @@ package com.github.clementherve.intellijjavadependencyupdaterplugin.settings;
 
 import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -21,7 +20,6 @@ import java.awt.*;
  */
 public class DependencyUpdaterSettingsPanel {
 
-    private final Project myProject;
     private final JPanel myMainPanel;
 
     private final JBTextField nexusBaseUrlField;
@@ -35,9 +33,7 @@ public class DependencyUpdaterSettingsPanel {
     private final JBTextField versionFilterRegexField;
     private String cachedPassword = "";
 
-    public DependencyUpdaterSettingsPanel(@NotNull Project project) {
-        this.myProject = project;
-
+    public DependencyUpdaterSettingsPanel() {
         nexusBaseUrlField = new JBTextField();
         nexusUsernameField = new JBTextField();
         nexusPasswordField = new JBPasswordField();
@@ -96,7 +92,7 @@ public class DependencyUpdaterSettingsPanel {
     }
 
     public boolean isModified() {
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(myProject);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
 
         if (!nexusBaseUrlField.getText().equals(settings.getNexusBaseUrl())) return true;
         if (!nexusUsernameField.getText().equals(settings.getNexusUsername())) return true;
@@ -122,7 +118,7 @@ public class DependencyUpdaterSettingsPanel {
     }
 
     public void apply() {
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(myProject);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
 
         settings.setNexusBaseUrl(nexusBaseUrlField.getText());
         settings.setNexusUsername(nexusUsernameField.getText());
@@ -148,7 +144,7 @@ public class DependencyUpdaterSettingsPanel {
     }
 
     public void reset() {
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(myProject);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
 
         nexusBaseUrlField.setText(settings.getNexusBaseUrl());
         nexusUsernameField.setText(settings.getNexusUsername());

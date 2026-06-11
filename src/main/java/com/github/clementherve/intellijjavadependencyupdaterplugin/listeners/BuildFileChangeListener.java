@@ -50,7 +50,7 @@ public class BuildFileChangeListener implements FileDocumentManagerListener {
             return;
         }
 
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
 
         // Only refresh cache if trigger mode is ON_SAVE
         if (settings.getTriggerMode() != DependencyUpdaterSettings.TriggerMode.ON_SAVE) {

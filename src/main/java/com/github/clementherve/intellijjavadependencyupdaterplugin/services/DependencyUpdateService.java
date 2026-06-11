@@ -66,7 +66,7 @@ public final class DependencyUpdateService {
                 return null;
             }
 
-            DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+            DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
             VersionPolicy policy = getFirstPolicy();
             String excludeRegex = settings.getVersionFilterRegex();
 
@@ -92,7 +92,7 @@ public final class DependencyUpdateService {
      */
     @Nullable
     public VersionCandidate getFromCache(@NotNull DependencyInfo dependency) {
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
 
         List<String> cachedVersions = cache.getVersions(
                 dependency.group(),
@@ -126,7 +126,7 @@ public final class DependencyUpdateService {
      */
     @NotNull
     public List<VersionCandidate> getAllCandidatesFromCache(@NotNull DependencyInfo dependency) {
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
 
         List<String> cachedVersions = cache.getVersions(
                 dependency.group(),
@@ -172,7 +172,7 @@ public final class DependencyUpdateService {
      */
     @NotNull
     public List<String> fetchVersionsAndSaveThemToCache(@NotNull String group, @NotNull String artifact) throws IOException {
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
 
         List<String> cachedVersions = cache.getVersions(group, artifact, settings.getCacheTtlMinutes());
         if (cachedVersions != null) {
@@ -200,7 +200,7 @@ public final class DependencyUpdateService {
             return pluginPortalClient.fetchVersions(group, artifact);
         }
 
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
 
         final boolean isNexusConfigured = StringUtils.isNotBlank(settings.getNexusBaseUrl());
 
@@ -233,7 +233,7 @@ public final class DependencyUpdateService {
      */
     @NotNull
     private VersionRepository createNexusClient() {
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
         return new NexusClient(
                 settings.getNexusBaseUrl(),
                 settings.getNexusUsername(),
@@ -246,7 +246,7 @@ public final class DependencyUpdateService {
      */
     @NotNull
     private VersionPolicy getFirstPolicy() {
-        List<VersionPolicy> policies = DependencyUpdaterSettings.getInstance(project).getVersionPolicies();
+        List<VersionPolicy> policies = DependencyUpdaterSettings.getInstance().getVersionPolicies();
         return policies.isEmpty() ? VersionPolicy.createDefaultStablePolicy() : policies.getFirst();
     }
 
@@ -256,7 +256,7 @@ public final class DependencyUpdateService {
             return "Gradle Plugin Portal"; // todo: create a enum
         }
 
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
         if (StringUtils.isNotBlank(settings.getNexusBaseUrl())) {
             String nexusDependencyRegex = settings.getNexusDependencyRegex();
 
@@ -290,7 +290,7 @@ public final class DependencyUpdateService {
 
         final List<String> versions = fetchVersionsAndSaveThemToCache(dependency.group(), dependency.artifact());
 
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
         VersionPolicy policy = getFirstPolicy();
         String excludeRegex = settings.getVersionFilterRegex();
 

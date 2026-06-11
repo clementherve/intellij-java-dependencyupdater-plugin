@@ -38,7 +38,7 @@ public class DependencyStartupActivity implements ProjectActivity {
     @Nullable
     @Override
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
-        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance(project);
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
 
         final boolean isTriggerModeOnOpen = settings.getTriggerMode() == DependencyUpdaterSettings.TriggerMode.ON_OPEN;
         if (!isTriggerModeOnOpen) {

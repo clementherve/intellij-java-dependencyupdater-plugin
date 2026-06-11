@@ -5,8 +5,8 @@ import com.intellij.credentialStore.CredentialAttributes;
 import com.intellij.credentialStore.CredentialAttributesKt;
 import com.intellij.credentialStore.Credentials;
 import com.intellij.ide.passwordSafe.PasswordSafe;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.*;
-import com.intellij.openapi.project.Project;
 import com.intellij.util.xmlb.XmlSerializerUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,18 +22,13 @@ import java.util.List;
         name = "DependencyUpdaterSettings",
         storages = @Storage("dependencyUpdater.xml")
 )
-@Service(Service.Level.PROJECT)
+@Service(Service.Level.APP)
 public final class DependencyUpdaterSettings implements PersistentStateComponent<DependencyUpdaterSettings.State> {
 
     private final State state = new State();
-    private final Project myProject;
 
-    public DependencyUpdaterSettings(Project project) {
-        this.myProject = project;
-    }
-
-    public static DependencyUpdaterSettings getInstance(@NotNull Project project) {
-        return project.getService(DependencyUpdaterSettings.class);
+    public static DependencyUpdaterSettings getInstance() {
+        return ApplicationManager.getApplication().getService(DependencyUpdaterSettings.class);
     }
 
     @Override
@@ -76,9 +71,8 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
     }
 
     private CredentialAttributes createCredentialAttributes() {
-        String serviceName = "DependencyUpdater-" + myProject.getName();
         return new CredentialAttributes(
-                CredentialAttributesKt.generateServiceName("DependencyUpdater", serviceName)
+                CredentialAttributesKt.generateServiceName("DependencyUpdater", "DependencyUpdater-nexus")
         );
     }
 
