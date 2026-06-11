@@ -1,7 +1,7 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.policy;
 
-import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionCandidate;
-import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionPolicy;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.policy.VersionPolicy;
 import org.junit.Before;
 import org.junit.Test;
 

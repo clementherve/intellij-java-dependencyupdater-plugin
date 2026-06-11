@@ -1,8 +1,8 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.policy;
 
-import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionCandidate;
-import com.github.clementherve.intellijjavadependencyupdaterplugin.model.VersionPolicy;
-import com.github.clementherve.intellijjavadependencyupdaterplugin.util.SemanticVersion;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.policy.VersionPolicy;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.version.SemanticVersion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

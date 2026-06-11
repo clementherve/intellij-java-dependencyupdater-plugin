@@ -22,12 +22,12 @@
     <!-- Startup activity for cache warming -->
     <extensions defaultExtensionNs="com.intellij">
         <iconMapper mappingFile="GradleDependencyUpdaterIconMappings.json"/>
-        <postStartupActivity implementation="com.github.clementherve.intellijjavadependencyupdaterplugin.startup.DependencyStartupActivity"/>
+        <postStartupActivity implementation="com.github.clementherve.intellijjavadependencyupdaterplugin.ide.trigger.ProjectOpenWarmupActivity"/>
     </extensions>
 
     <!-- File change listener for ON_SAVE trigger mode -->
     <projectListeners>
-        <listener class="com.github.clementherve.intellijjavadependencyupdaterplugin.listeners.BuildFileChangeListener"
+        <listener class="com.github.clementherve.intellijjavadependencyupdaterplugin.ide.trigger.BuildFileSaveListener"
                   topic="com.intellij.openapi.fileEditor.FileDocumentManagerListener"/>
     </projectListeners>
 
@@ -35,40 +35,40 @@
         <!-- Settings -->
         <applicationConfigurable
                 parentId="tools"
-                instance="com.github.clementherve.intellijjavadependencyupdaterplugin.settings.DependencyUpdaterConfigurable"
+                instance="com.github.clementherve.intellijjavadependencyupdaterplugin.ide.settings.DependencyUpdaterConfigurable"
                 id="tools.dependency.updater"
                 displayName="Dependency Updater"/>
 
         <!-- Inline hints via annotator -->
         <annotator
                 language="Groovy"
-                implementationClass="com.github.clementherve.intellijjavadependencyupdaterplugin.annotator.DependencyAnnotator"/>
+                implementationClass="com.github.clementherve.intellijjavadependencyupdaterplugin.ide.annotator.DependencyUpdateAnnotator"/>
 
         <!-- Tool window -->
         <toolWindow id="Gradle Dependency Updater"
                     anchor="bottom"
                     icon="/icons/toolWindow.svg"
-                    factoryClass="com.github.clementherve.intellijjavadependencyupdaterplugin.toolwindow.DependencyOverviewToolWindowFactory"/>
+                    factoryClass="com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow.DependencyOverviewToolWindowFactory"/>
 
         <!-- Intentions -->
         <intentionAction>
             <language>Groovy</language>
-            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyIntention</className>
+            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.ide.intention.UpdateDependencyIntention</className>
             <category>Dependency updater</category>
         </intentionAction>
         <intentionAction>
             <language>Groovy</language>
-            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyToPatchIntention</className>
+            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.ide.intention.UpdateDependencyToPatchIntention</className>
             <category>Dependency updater</category>
         </intentionAction>
         <intentionAction>
             <language>Groovy</language>
-            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyToMinorIntention</className>
+            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.ide.intention.UpdateDependencyToMinorIntention</className>
             <category>Dependency updater</category>
         </intentionAction>
         <intentionAction>
             <language>Groovy</language>
-            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.intention.UpdateDependencyToMajorIntention</className>
+            <className>com.github.clementherve.intellijjavadependencyupdaterplugin.ide.intention.UpdateDependencyToMajorIntention</className>
             <category>Dependency updater</category>
         </intentionAction>
     </extensions>
