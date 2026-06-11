@@ -76,7 +76,22 @@ public class VersionReplacer {
                 updateVariableInExtBlock(file, document, dependency.variableName(), newVersion);
             } else {
                 String oldText = versionElement.getText();
-                String newText = oldText.replace(dependency.currentVersion(), newVersion);
+                String currentVersion = dependency.currentVersion();
+
+                // The version is the trailing token of the literal (right before the
+                // closing quote), e.g. 'group:artifact:version' or, for plugins, just
+                // 'version'. Replacing the *last* occurrence avoids rewriting parts of
+                // the group/artifact that happen to contain the same digits
+                // (e.g. 'org.example:client-2.0:2.0').
+                int versionIndex = oldText.lastIndexOf(currentVersion);
+                if (versionIndex < 0) {
+                    LOGGER.warn("Could not locate version '" + currentVersion + "' in '" + oldText + "'");
+                    return;
+                }
+
+                String newText = oldText.substring(0, versionIndex)
+                        + newVersion
+                        + oldText.substring(versionIndex + currentVersion.length());
 
                 int start = versionElement.getTextRange().getStartOffset();
                 int end = versionElement.getTextRange().getEndOffset();
