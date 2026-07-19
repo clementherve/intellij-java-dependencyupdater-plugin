@@ -5,6 +5,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.De
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.BuildFileParser;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.BuildFileParserFactory;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.DependencyNotFoundException;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.service.DependencyUpdateService;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow.DependencyRow;
 import com.intellij.openapi.application.ApplicationManager;
@@ -116,10 +117,14 @@ class DependencyScanController {
                     indicator.setText2(DependencyUpdaterBundle.message("toolWindow.checkingDependency", dependency.artifact()));
                     listener.onStatus(DependencyUpdaterBundle.message("toolWindow.checkingDependency", dependency.artifact()) + "...");
 
-                    VersionCandidate latest = forceRefresh
-                            ? service.forceCheckForUpdate(dependency)
-                            : service.checkForUpdate(dependency);
-                    rows.add(DependencyRow.from(dependency, latest, projectName));
+                    try {
+                        VersionCandidate latest = forceRefresh
+                                ? service.forceCheckForUpdate(dependency)
+                                : service.checkForUpdate(dependency);
+                        rows.add(DependencyRow.from(dependency, latest, projectName));
+                    } catch (DependencyNotFoundException notFound) {
+                        rows.add(DependencyRow.notFound(dependency, projectName));
+                    }
                 }
             }
 

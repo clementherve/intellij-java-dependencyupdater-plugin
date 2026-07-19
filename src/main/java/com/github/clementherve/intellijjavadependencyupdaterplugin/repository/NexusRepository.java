@@ -8,7 +8,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -66,7 +65,7 @@ public class NexusRepository implements VersionRepository {
                 throw new IOException("Nexus authentication failed. Please check your credentials.", e);
             } else if (e.getStatusCode() == 404) {
                 LOGGER.warn("Artifact not found in Nexus: " + group + ":" + artifact);
-                return Collections.emptyList();
+                throw new DependencyNotFoundException("Artifact not found in Nexus: " + group + ":" + artifact);
             }
             throw e;
         } catch (IOException e) {

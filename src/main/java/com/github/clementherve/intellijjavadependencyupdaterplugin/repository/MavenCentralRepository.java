@@ -5,7 +5,6 @@ import com.intellij.util.io.HttpRequests;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -37,7 +36,7 @@ public class MavenCentralRepository implements VersionRepository {
         } catch (HttpRequests.HttpStatusException e) {
             if (e.getStatusCode() == 404) {
                 LOG.warn("Artifact not found in Maven Central: " + group + ":" + artifact);
-                return Collections.emptyList();
+                throw new DependencyNotFoundException("Artifact not found in Maven Central: " + group + ":" + artifact);
             }
             throw e;
         } catch (IOException e) {

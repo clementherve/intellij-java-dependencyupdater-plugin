@@ -77,6 +77,13 @@ public class DependencyUpdateAnnotator implements Annotator {
             VersionCandidate candidate = service.getFromCache(dependency);
 
             if (candidate == null) {
+                if (service.isKnownNotFound(dependency)) {
+                    String notFoundMessage = String.format("%s: not found in configured repository", dependency.artifact());
+                    annotation.newAnnotation(HighlightSeverity.ERROR, notFoundMessage)
+                            .range(element.getTextRange())
+                            .tooltip(notFoundMessage)
+                            .create();
+                }
                 break;
             }
 

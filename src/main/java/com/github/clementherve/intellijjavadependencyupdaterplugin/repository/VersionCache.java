@@ -30,6 +30,52 @@ public final class VersionCache {
      */
     @Nullable
     public List<String> getVersions(@NotNull String group, @NotNull String artifact, int ttlMinutes) {
+        CacheEntry entry = getLiveEntry(group, artifact, ttlMinutes);
+        return entry == null || entry.notFound ? null : entry.versions;
+    }
+
+    /**
+     * Puts versions into the cache.
+     *
+     * @param group    the dependency group ID
+     * @param artifact the dependency artifact ID
+     * @param versions the list of versions to cache
+     */
+    public void putVersions(@NotNull String group, @NotNull String artifact, @NotNull List<String> versions) {
+        String key = createKey(group, artifact);
+        cache.put(key, new CacheEntry(versions, false, System.currentTimeMillis()));
+    }
+
+    /**
+     * Records that a dependency could not be found in the repository it was queried against.
+     *
+     * @param group    the dependency group ID
+     * @param artifact the dependency artifact ID
+     */
+    public void markNotFound(@NotNull String group, @NotNull String artifact) {
+        String key = createKey(group, artifact);
+        cache.put(key, new CacheEntry(List.of(), true, System.currentTimeMillis()));
+    }
+
+    /**
+     * Checks whether a dependency is known, within the TTL, to not exist in the repository it
+     * was queried against.
+     *
+     * @param group      the dependency group ID
+     * @param artifact   the dependency artifact ID
+     * @param ttlMinutes the TTL in minutes
+     */
+    public boolean isNotFound(@NotNull String group, @NotNull String artifact, int ttlMinutes) {
+        CacheEntry entry = getLiveEntry(group, artifact, ttlMinutes);
+        return entry != null && entry.notFound;
+    }
+
+    /**
+     * Returns the cache entry for the given dependency if it exists and hasn't expired,
+     * evicting it first if it has.
+     */
+    @Nullable
+    private CacheEntry getLiveEntry(@NotNull String group, @NotNull String artifact, int ttlMinutes) {
         String key = createKey(group, artifact);
         CacheEntry entry = cache.get(key);
 
@@ -45,19 +91,7 @@ public final class VersionCache {
             return null;
         }
 
-        return entry.versions;
-    }
-
-    /**
-     * Puts versions into the cache.
-     *
-     * @param group    the dependency group ID
-     * @param artifact the dependency artifact ID
-     * @param versions the list of versions to cache
-     */
-    public void putVersions(@NotNull String group, @NotNull String artifact, @NotNull List<String> versions) {
-        String key = createKey(group, artifact);
-        cache.put(key, new CacheEntry(versions, System.currentTimeMillis()));
+        return entry;
     }
 
     /**
@@ -93,11 +127,13 @@ public final class VersionCache {
     }
 
     /**
-     * Cache entry with timestamp for TTL checking.
+     * Cache entry with timestamp for TTL checking. {@code notFound} marks a dependency that
+     * couldn't be located in the repository, as opposed to one with no newer versions.
      */
-    private record CacheEntry(List<String> versions, long timestamp) {
-        private CacheEntry(@NotNull List<String> versions, long timestamp) {
+    private record CacheEntry(List<String> versions, boolean notFound, long timestamp) {
+        private CacheEntry(@NotNull List<String> versions, boolean notFound, long timestamp) {
             this.versions = versions;
+            this.notFound = notFound;
             this.timestamp = timestamp;
         }
     }

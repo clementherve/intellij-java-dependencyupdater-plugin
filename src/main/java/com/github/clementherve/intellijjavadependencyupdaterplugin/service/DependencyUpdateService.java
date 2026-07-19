@@ -1,5 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.service;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.DependencyNotFoundException;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.VersionCache;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.Dependency;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
@@ -49,9 +50,10 @@ public final class DependencyUpdateService {
      *
      * @param dependency the dependency to check
      * @return the best version candidate, or null if no update is available
+     * @throws DependencyNotFoundException if the dependency could not be found in any configured repository
      */
     @Nullable
-    public VersionCandidate checkForUpdate(@NotNull Dependency dependency) {
+    public VersionCandidate checkForUpdate(@NotNull Dependency dependency) throws DependencyNotFoundException {
         try {
             List<String> versions = fetchVersionsAndSaveThemToCache(dependency.group(), dependency.artifact());
             if (versions.isEmpty()) {
@@ -59,6 +61,8 @@ public final class DependencyUpdateService {
             }
 
             return findBestCandidate(dependency, versions);
+        } catch (DependencyNotFoundException notFound) {
+            throw notFound;
         } catch (Exception exception) {
             LOGGER.warn("Failed to check for update: " + dependency.getFullCoordinates(), exception);
             return null;
@@ -82,6 +86,18 @@ public final class DependencyUpdateService {
         }
 
         return findBestCandidate(dependency, cachedVersions);
+    }
+
+    /**
+     * Checks whether a dependency is known, from the cache, to not exist in the repository it
+     * was queried against - SAFE to call from EDT/read actions. Never makes network calls.
+     *
+     * @param dependency the dependency to check
+     * @return true if the dependency is known to be missing from its repository
+     */
+    public boolean isKnownNotFound(@NotNull Dependency dependency) {
+        DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
+        return cache.isNotFound(dependency.group(), dependency.artifact(), settings.getCacheTtlMinutes());
     }
 
     /**
@@ -140,7 +156,17 @@ public final class DependencyUpdateService {
             return cachedVersions;
         }
 
-        List<String> versions = versionResolver.fetchVersions(group, artifact);
+        if (cache.isNotFound(group, artifact, settings.getCacheTtlMinutes())) {
+            throw new DependencyNotFoundException("Artifact not found (cached): " + group + ":" + artifact);
+        }
+
+        List<String> versions;
+        try {
+            versions = versionResolver.fetchVersions(group, artifact);
+        } catch (DependencyNotFoundException notFound) {
+            cache.markNotFound(group, artifact);
+            throw notFound;
+        }
 
         if (!versions.isEmpty()) {
             cache.putVersions(group, artifact, versions);

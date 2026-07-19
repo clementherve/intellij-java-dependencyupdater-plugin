@@ -7,6 +7,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.SmartPsiElementPointer;
+import com.intellij.ui.JBColor;
 import com.intellij.ui.SearchTextField;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.table.JBTable;
@@ -14,13 +15,16 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.RowFilter;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableRowSorter;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -55,6 +59,7 @@ class DependencyTable {
         this.sorter = new TableRowSorter<>(model);
         table.setRowSorter(sorter);
         table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        table.setDefaultRenderer(Object.class, new StatusAwareCellRenderer(model));
         installMouseListener();
 
         this.component = buildComponent();
@@ -170,6 +175,34 @@ class DependencyTable {
             projectColumn.setMinWidth(0);
             projectColumn.setMaxWidth(0);
             projectColumn.setPreferredWidth(0);
+        }
+    }
+
+    /**
+     * Renders every cell of a row in red when its dependency could not be found in the
+     * repository, so a lookup failure is visible instead of blending in as "up to date".
+     */
+    private static final class StatusAwareCellRenderer extends DefaultTableCellRenderer {
+
+        private final DependencyTableModel model;
+
+        StatusAwareCellRenderer(@NotNull DependencyTableModel model) {
+            this.model = model;
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                        boolean hasFocus, int row, int column) {
+            Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            if (!isSelected) {
+                DependencyRow dependencyRow = model.getRow(table.convertRowIndexToModel(row));
+                component.setForeground(dependencyRow.status() == DependencyRow.Status.NOT_FOUND
+                        ? JBColor.RED
+                        : table.getForeground());
+            }
+
+            return component;
         }
     }
 }

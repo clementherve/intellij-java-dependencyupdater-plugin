@@ -1,6 +1,8 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.repository;
 
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -25,6 +27,7 @@ import java.util.List;
 public class GradlePluginPortalRepository implements VersionRepository {
 
     private static final String PLUGIN_PORTAL_MAVEN = "https://plugins.gradle.org/m2/";
+    private static final Logger LOGGER = LoggerFactory.getLogger(GradlePluginPortalRepository.class);
     private final HttpClient httpClient;
 
     public GradlePluginPortalRepository() {
@@ -59,6 +62,9 @@ public class GradlePluginPortalRepository implements VersionRepository {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+            if (response.statusCode() == 404) {
+                throw new DependencyNotFoundException("Plugin not found in Gradle Plugin Portal: " + pluginId);
+            }
             if (response.statusCode() != 200) {
                 throw new IOException("Plugin Portal returned status " + response.statusCode() + " for plugin: " + pluginId);
             }
@@ -95,6 +101,7 @@ public class GradlePluginPortalRepository implements VersionRepository {
             Collections.reverse(versions);
             return versions;
         } catch (Exception e) {
+            LOGGER.error("An error happened when fetching versions from maven: {}", e.getMessage());
             return Collections.emptyList();
         }
     }

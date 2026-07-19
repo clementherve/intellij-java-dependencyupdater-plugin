@@ -9,15 +9,19 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Represents a row in the dependency table.
  */
-public record DependencyRow(Dependency dependency, VersionCandidate latestVersion, String status,
+public record DependencyRow(Dependency dependency, VersionCandidate latestVersion, Status status,
                             String updateType, String projectName) {
 
-    private static final String UP_TO_DATE = "Up to date";
-    private static final String OUTDATED = "Outdated";
+    /**
+     * Where a dependency stands relative to the repository it was resolved against.
+     */
+    public enum Status {
+        UP_TO_DATE, OUTDATED, NOT_FOUND
+    }
 
     public DependencyRow(@NotNull Dependency dependency,
                          @Nullable VersionCandidate latestVersion,
-                         @NotNull String status,
+                         @NotNull Status status,
                          @Nullable String updateType,
                          @NotNull String projectName) {
         this.dependency = dependency;
@@ -35,16 +39,24 @@ public record DependencyRow(Dependency dependency, VersionCandidate latestVersio
     public static DependencyRow from(@NotNull Dependency dependency,
                                      @Nullable VersionCandidate latestVersion,
                                      @NotNull String projectName) {
-        String status;
+        Status status;
         String updateType = null;
 
         if (latestVersion == null) {
-            status = UP_TO_DATE;
+            status = Status.UP_TO_DATE;
         } else {
-            status = OUTDATED;
+            status = Status.OUTDATED;
             updateType = VersionChangeClassifier.describe(dependency.currentVersion(), latestVersion.version());
         }
 
         return new DependencyRow(dependency, latestVersion, status, updateType, projectName);
+    }
+
+    /**
+     * Builds a row for a dependency that could not be found in the repository it was queried against.
+     */
+    @NotNull
+    public static DependencyRow notFound(@NotNull Dependency dependency, @NotNull String projectName) {
+        return new DependencyRow(dependency, null, Status.NOT_FOUND, null, projectName);
     }
 }

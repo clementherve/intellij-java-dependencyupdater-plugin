@@ -62,7 +62,9 @@ public class DependencyTableModel extends AbstractTableModel {
             }
             case 1 -> dependency.currentVersion();
             case 2 -> row.latestVersion() != null ? row.latestVersion().version() : NO_VALUE;
-            case 3 -> row.updateType() != null ? row.updateType() : NO_VALUE;
+            case 3 -> row.status() == DependencyRow.Status.NOT_FOUND
+                    ? DependencyUpdaterBundle.message("toolWindow.status.notFound")
+                    : row.updateType() != null ? row.updateType() : NO_VALUE;
             case 4 -> dependency.group().isEmpty()
                     ? DependencyUpdaterBundle.message("toolWindow.type.plugin")
                     : DependencyUpdaterBundle.message("toolWindow.type.dependency");

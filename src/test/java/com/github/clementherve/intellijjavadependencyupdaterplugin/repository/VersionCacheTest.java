@@ -132,4 +132,37 @@ public class VersionCacheTest {
         List<String> retrieved = cache.getVersions("com.example", "artifact", 1440); // 24 hours
         assertNotNull(retrieved);
     }
+
+    @Test
+    public void test_mark_not_found() {
+        cache.markNotFound("com.example", "missing");
+
+        assertTrue(cache.isNotFound("com.example", "missing", 30));
+        assertNull(cache.getVersions("com.example", "missing", 30));
+    }
+
+    @Test
+    public void test_not_found_expires_with_ttl() throws InterruptedException {
+        cache.markNotFound("com.example", "missing");
+
+        assertTrue(cache.isNotFound("com.example", "missing", 0));
+
+        Thread.sleep(100);
+
+        assertFalse(cache.isNotFound("com.example", "missing", 0));
+    }
+
+    @Test
+    public void test_put_versions_clears_not_found_marker() {
+        cache.markNotFound("com.example", "artifact");
+        cache.putVersions("com.example", "artifact", Arrays.asList("1.0.0"));
+
+        assertFalse(cache.isNotFound("com.example", "artifact", 30));
+        assertNotNull(cache.getVersions("com.example", "artifact", 30));
+    }
+
+    @Test
+    public void test_not_cached_is_not_reported_as_not_found() {
+        assertFalse(cache.isNotFound("com.example", "unknown", 30));
+    }
 }

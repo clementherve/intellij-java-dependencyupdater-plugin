@@ -1,6 +1,7 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.action;
 
 import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.Dependency;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.DependencyNotFoundException;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.BuildFileParser;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.BuildFileParserFactory;
@@ -75,7 +76,11 @@ public class UpdateAllDependenciesAction extends AnAction {
 
                     VersionCandidate candidate = dependencyUpdateService.getFromCache(dependency);
                     if (candidate == null) {
-                        candidate = dependencyUpdateService.checkForUpdate(dependency);
+                        try {
+                            candidate = dependencyUpdateService.checkForUpdate(dependency);
+                        } catch (DependencyNotFoundException notFound) {
+                            candidate = null;
+                        }
                     }
 
                     if (candidate != null) {
