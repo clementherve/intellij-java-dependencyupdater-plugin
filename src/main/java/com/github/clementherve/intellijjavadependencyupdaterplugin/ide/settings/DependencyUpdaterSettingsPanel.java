@@ -1,10 +1,14 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.settings;
 
 import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.IgnoredVersion;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.ui.CollectionListModel;
+import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
+import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBPasswordField;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
@@ -14,6 +18,8 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.HashSet;
 
 /**
  * The settings UI panel.
@@ -31,6 +37,8 @@ public class DependencyUpdaterSettingsPanel {
     private final JBCheckBox showInlayHintsCheckBox;
     private final ComboBox<DependencyUpdaterSettings.TriggerMode> triggerModeComboBox;
     private final JBTextField versionFilterRegexField;
+    private final CollectionListModel<IgnoredVersion> ignoredVersionsModel;
+    private final JBList<IgnoredVersion> ignoredVersionsList;
     private String cachedPassword = "";
 
     public DependencyUpdaterSettingsPanel() {
@@ -46,6 +54,18 @@ public class DependencyUpdaterSettingsPanel {
         showInlayHintsCheckBox = new JBCheckBox(DependencyUpdaterBundle.message("settings.showInlayHints"));
 
         versionFilterRegexField = new JBTextField();
+
+        ignoredVersionsModel = new CollectionListModel<>();
+        ignoredVersionsList = new JBList<>(ignoredVersionsModel);
+        JPanel ignoredVersionsPanel = ToolbarDecorator.createDecorator(ignoredVersionsList)
+                .disableAddAction()
+                .setRemoveAction(button -> {
+                    int selectedIndex = ignoredVersionsList.getSelectedIndex();
+                    if (selectedIndex >= 0) {
+                        ignoredVersionsModel.remove(selectedIndex);
+                    }
+                })
+                .createPanel();
 
         triggerModeComboBox = new ComboBox<>(DependencyUpdaterSettings.TriggerMode.values());
         triggerModeComboBox.setRenderer(new DefaultListCellRenderer() {
@@ -79,6 +99,9 @@ public class DependencyUpdaterSettingsPanel {
                 .addSeparator(5)
                 .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.versionFilterRegex")), versionFilterRegexField, 1, false)
                 .addComponentToRightColumn(new JBLabel(DependencyUpdaterBundle.message("settings.versionFilterRegexHint")), 0)
+                .addSeparator(5)
+                .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.ignoredVersions")), ignoredVersionsPanel, 1, true)
+                .addComponentToRightColumn(new JBLabel(DependencyUpdaterBundle.message("settings.ignoredVersionsHint")), 0)
                 .addSeparator(10)
                 .addComponentFillVertically(new JPanel(), 0)
                 .getPanel();
@@ -114,6 +137,8 @@ public class DependencyUpdaterSettingsPanel {
 
         if (!versionFilterRegexField.getText().equals(settings.getVersionFilterRegex())) return true;
 
+        if (!new HashSet<>(ignoredVersionsModel.getItems()).equals(new HashSet<>(settings.getIgnoredVersions()))) return true;
+
         return !nexusDependencyRegexField.getText().equals(settings.getNexusDependencyRegex());
     }
 
@@ -140,6 +165,7 @@ public class DependencyUpdaterSettingsPanel {
         }
 
         settings.setVersionFilterRegex(versionFilterRegexField.getText());
+        settings.setIgnoredVersions(new ArrayList<>(ignoredVersionsModel.getItems()));
         settings.setNexusDependencyRegex(nexusDependencyRegexField.getText());
     }
 
@@ -163,6 +189,8 @@ public class DependencyUpdaterSettingsPanel {
         showInlayHintsCheckBox.setSelected(settings.isShowInlayHints());
         triggerModeComboBox.setSelectedItem(settings.getTriggerMode());
         versionFilterRegexField.setText(settings.getVersionFilterRegex());
+        ignoredVersionsModel.removeAll();
+        ignoredVersionsModel.add(settings.getIgnoredVersions());
         nexusDependencyRegexField.setText(settings.getNexusDependencyRegex());
     }
 }

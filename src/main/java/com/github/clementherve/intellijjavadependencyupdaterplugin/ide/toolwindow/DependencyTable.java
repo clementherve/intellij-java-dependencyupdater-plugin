@@ -1,5 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow.DependencyRow;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
@@ -41,6 +42,7 @@ class DependencyTable {
      */
     interface Listener {
         void onPickVersion(@NotNull DependencyRow row);
+        void onIgnoreVersion(@NotNull DependencyRow row);
     }
 
     private static final int PROJECT_COLUMN_INDEX = 5;
@@ -132,10 +134,27 @@ class DependencyTable {
                     }
                     table.setRowSelectionInterval(clickedRow, clickedRow);
                     DependencyRow row = model.getRow(table.convertRowIndexToModel(clickedRow));
-                    listener.onPickVersion(row);
+                    showContextMenu(row, event);
                 }
             }
         });
+    }
+
+    private void showContextMenu(@NotNull DependencyRow row, @NotNull java.awt.event.MouseEvent event) {
+        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+        javax.swing.JMenuItem pickVersionItem = new javax.swing.JMenuItem(DependencyUpdaterBundle.message("toolWindow.contextMenu.pickVersion"));
+        pickVersionItem.addActionListener(actionEvent -> listener.onPickVersion(row));
+        menu.add(pickVersionItem);
+
+        if (row.latestVersion() != null) {
+            javax.swing.JMenuItem ignoreVersionItem = new javax.swing.JMenuItem(
+                    DependencyUpdaterBundle.message("toolWindow.contextMenu.ignoreVersion", row.latestVersion().version()));
+            ignoreVersionItem.addActionListener(actionEvent -> listener.onIgnoreVersion(row));
+            menu.add(ignoreVersionItem);
+        }
+
+        menu.show(table, event.getX(), event.getY());
     }
 
     private void navigateToSelectedDependency() {

@@ -1,5 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.settings;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.IgnoredVersion;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.policy.VersionPolicy;
 import com.intellij.credentialStore.CredentialAttributes;
 import com.intellij.credentialStore.CredentialAttributesKt;
@@ -139,6 +140,31 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
         state.nexusDependencyRegex = nexusDependencyRegex;
     }
 
+    @NotNull
+    public List<IgnoredVersion> getIgnoredVersions() {
+        return new ArrayList<>(state.ignoredVersions);
+    }
+
+    public void setIgnoredVersions(@NotNull List<IgnoredVersion> ignoredVersions) {
+        state.ignoredVersions = new ArrayList<>(ignoredVersions);
+    }
+
+    public boolean isVersionIgnored(@NotNull String group, @NotNull String artifact, @NotNull String version) {
+        return state.ignoredVersions.stream().anyMatch(ignored ->
+                ignored.group().equals(group) && ignored.artifact().equals(artifact) && ignored.version().equals(version));
+    }
+
+    public void ignoreVersion(@NotNull String group, @NotNull String artifact, @NotNull String version) {
+        if (!isVersionIgnored(group, artifact, version)) {
+            state.ignoredVersions.add(new IgnoredVersion(group, artifact, version));
+        }
+    }
+
+    public void unignoreVersion(@NotNull String group, @NotNull String artifact, @NotNull String version) {
+        state.ignoredVersions.removeIf(ignored ->
+                ignored.group().equals(group) && ignored.artifact().equals(artifact) && ignored.version().equals(version));
+    }
+
     public enum TriggerMode {
         ON_OPEN("On project open"),
         ON_SAVE("On file save"),
@@ -168,6 +194,7 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
         public boolean showInlayHints = true;
         public TriggerMode triggerMode = TriggerMode.ON_OPEN;
         public String versionFilterRegex = "";
+        public List<IgnoredVersion> ignoredVersions = new ArrayList<>();
 
         // Default constructor for XML serialization
         public State() {

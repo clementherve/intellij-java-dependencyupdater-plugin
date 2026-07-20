@@ -209,8 +209,12 @@ public final class DependencyUpdateService {
         VersionPolicy policy = getFirstPolicy();
         String excludeRegex = settings.getVersionFilterRegex();
 
+        List<String> nonIgnoredVersions = versions.stream()
+                .filter(version -> !settings.isVersionIgnored(dependency.group(), dependency.artifact(), version))
+                .toList();
+
         return policyEvaluator.findBestCandidate(
-                versions,
+                nonIgnoredVersions,
                 dependency.currentVersion(),
                 policy,
                 repositorySourceName(dependency),

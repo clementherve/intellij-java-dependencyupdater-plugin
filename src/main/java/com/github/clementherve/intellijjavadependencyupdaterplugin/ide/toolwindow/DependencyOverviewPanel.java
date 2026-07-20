@@ -2,8 +2,10 @@ package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwind
 
 import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.service.DependencyUpdateService;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.settings.DependencyUpdaterSettings;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow.DependencyRow;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.update.DependencyVersionWriter;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.SupportedBuildFile;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionManager;
@@ -55,7 +57,17 @@ public class DependencyOverviewPanel extends JPanel {
     public DependencyOverviewPanel(@NotNull Project project) {
         super(new BorderLayout());
         this.project = project;
-        this.dependencyTable = new DependencyTable(project, this::pickAndApplyVersion);
+        this.dependencyTable = new DependencyTable(project, new DependencyTable.Listener() {
+            @Override
+            public void onPickVersion(@NotNull DependencyRow row) {
+                pickAndApplyVersion(row);
+            }
+
+            @Override
+            public void onIgnoreVersion(@NotNull DependencyRow row) {
+                ignoreVersion(row);
+            }
+        });
         this.scanController = new DependencyScanController(project, new ScanListener());
         this.cardLayout = new CardLayout();
         this.contentPanel = new JPanel(cardLayout);
@@ -157,6 +169,16 @@ public class DependencyOverviewPanel extends JPanel {
             PsiDocumentManager.getInstance(project).commitAllDocuments();
             refreshDependencies(false);
         }
+    }
+
+    private void ignoreVersion(@NotNull DependencyRow row) {
+        VersionCandidate latestVersion = row.latestVersion();
+        if (latestVersion == null) {
+            return;
+        }
+
+        DependencyUpdaterSettings.getInstance().ignoreVersion(row.dependency().group(), row.dependency().artifact(), latestVersion.version());
+        refreshDependencies(false);
     }
 
     private void updateSelectedDependencies(boolean pickVersion) {

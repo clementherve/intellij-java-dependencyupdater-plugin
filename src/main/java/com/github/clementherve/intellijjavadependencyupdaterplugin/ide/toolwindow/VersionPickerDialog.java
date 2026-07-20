@@ -1,10 +1,13 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.Dependency;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.settings.DependencyUpdaterSettings;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.service.DependencyUpdateService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
+import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBScrollPane;
@@ -24,7 +27,9 @@ public class VersionPickerDialog extends DialogWrapper {
 
     private final Dependency dependency;
     private final List<VersionCandidate> availableVersions;
+    private final DependencyUpdaterSettings settings = DependencyUpdaterSettings.getInstance();
     private JBList<String> versionList;
+    private JButton ignoreButton;
     private String selectedVersion;
 
     public VersionPickerDialog(@NotNull Project project, @NotNull Dependency dependency, @NotNull List<VersionCandidate> availableVersions) {
@@ -43,6 +48,7 @@ public class VersionPickerDialog extends DialogWrapper {
 
         versionList = new JBList<>(versions);
         versionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        versionList.setCellRenderer(new IgnoredVersionAwareCellRenderer());
 
         if (versions.length > 0) {
             versionList.setSelectedIndex(0);
@@ -57,8 +63,14 @@ public class VersionPickerDialog extends DialogWrapper {
             }
         });
 
+        versionList.addListSelectionListener(event -> updateIgnoreButtonState());
+
         JBScrollPane scrollPane = new JBScrollPane(versionList);
         scrollPane.setPreferredSize(new Dimension(400, 300));
+
+        ignoreButton = new JButton(DependencyUpdaterBundle.message("toolWindow.versionPicker.ignoreButton"));
+        ignoreButton.addActionListener(event -> ignoreSelectedVersion());
+        updateIgnoreButtonState();
 
         JPanel panel = FormBuilder.createFormBuilder()
                 .addLabeledComponent(
@@ -72,11 +84,49 @@ public class VersionPickerDialog extends DialogWrapper {
                         new JBLabel("Available versions:"), scrollPane, 1, true)
                 .addComponentToRightColumn(
                         new JBLabel("(Latest version at the top)"), 0)
+                .addComponentToRightColumn(ignoreButton, 5)
                 .getPanel();
 
         panel.setBorder(JBUI.Borders.empty(10));
 
         return panel;
+    }
+
+    private void ignoreSelectedVersion() {
+        String selected = versionList.getSelectedValue();
+        if (selected == null || settings.isVersionIgnored(dependency.group(), dependency.artifact(), selected)) {
+            return;
+        }
+
+        settings.ignoreVersion(dependency.group(), dependency.artifact(), selected);
+        versionList.repaint();
+        updateIgnoreButtonState();
+    }
+
+    private void updateIgnoreButtonState() {
+        String selected = versionList.getSelectedValue();
+        ignoreButton.setEnabled(selected != null && !settings.isVersionIgnored(dependency.group(), dependency.artifact(), selected));
+    }
+
+    /**
+     * Greys out and marks versions that are already on the ignore list, so the picker visually
+     * distinguishes them from versions that can still be suggested as updates.
+     */
+    private final class IgnoredVersionAwareCellRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                       boolean isSelected, boolean cellHasFocus) {
+            Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+            if (value instanceof String version && settings.isVersionIgnored(dependency.group(), dependency.artifact(), version)) {
+                setText(version + " " + DependencyUpdaterBundle.message("toolWindow.versionPicker.ignoredSuffix"));
+                if (!isSelected) {
+                    setForeground(JBColor.GRAY);
+                }
+            }
+
+            return component;
+        }
     }
 
     @Override
