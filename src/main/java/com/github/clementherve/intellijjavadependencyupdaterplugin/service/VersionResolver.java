@@ -6,7 +6,6 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.Ne
 import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.RepositorySource;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.settings.DependencyUpdaterSettings;
 import com.intellij.openapi.diagnostic.Logger;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -44,7 +43,7 @@ final class VersionResolver {
         if (shouldUseNexus(group, artifact, settings)) {
             try {
                 List<String> versions = createNexusRepository(settings).fetchVersions(group, artifact);
-                if (CollectionUtils.isNotEmpty(versions)) {
+                if (versions != null && !versions.isEmpty()) {
                     return versions;
                 }
             } catch (IOException exception) {
