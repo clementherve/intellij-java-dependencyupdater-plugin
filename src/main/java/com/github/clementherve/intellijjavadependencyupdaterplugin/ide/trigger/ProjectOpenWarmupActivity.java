@@ -1,19 +1,20 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.trigger;
 
 import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
-import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.Dependency;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.BuildFileParser;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.BuildFileParserFactory;
-import com.github.clementherve.intellijjavadependencyupdaterplugin.service.DependencyUpdateService;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.Dependency;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.settings.DependencyUpdaterSettings;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.DependencyNotFoundException;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.service.DependencyUpdateService;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
@@ -34,6 +35,17 @@ import static com.github.clementherve.intellijjavadependencyupdaterplugin.buildf
 public class ProjectOpenWarmupActivity implements ProjectActivity {
 
     private static final Logger LOGGER = Logger.getInstance(ProjectOpenWarmupActivity.class);
+
+    private static void tryAndFetchVersions(final Dependency dependency, final DependencyUpdateService service) {
+        try {
+            service.fetchVersionsAndSaveThemToCache(dependency.group(), dependency.artifact());
+        } catch (DependencyNotFoundException notFound) {
+            // Expected: already logged/cached at the repository layer.
+        } catch (Exception e) {
+            LOGGER.warn("Failed to fetch versions for " + dependency.getFullCoordinates() + ": " + e.getMessage());
+            // Continue with other dependencies
+        }
+    }
 
     @Nullable
     @Override
@@ -104,12 +116,7 @@ public class ProjectOpenWarmupActivity implements ProjectActivity {
 
                     indicator.setText2(DependencyUpdaterBundle.message("cache.fetchingVersions", dependency.artifact()));
 
-                    try {
-                        service.fetchVersionsAndSaveThemToCache(dependency.group(), dependency.artifact());
-                    } catch (Exception e) {
-                        LOGGER.warn("Failed to fetch versions for " + dependency.getFullCoordinates() + ": " + e.getMessage());
-                        // Continue with other dependencies
-                    }
+                    tryAndFetchVersions(dependency, service);
                 }
 
             } catch (Exception e) {

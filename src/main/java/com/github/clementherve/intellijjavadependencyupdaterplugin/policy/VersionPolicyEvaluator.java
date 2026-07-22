@@ -1,8 +1,7 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.policy;
 
-import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
-import com.github.clementherve.intellijjavadependencyupdaterplugin.policy.VersionPolicy;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.SemanticVersion;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,8 +19,8 @@ public class VersionPolicyEvaluator {
     /**
      * Evaluates a list of version strings against a policy, returning filtered and sorted candidates.
      *
-     * @param versions the list of version strings to evaluate
-     * @param policy the version policy to apply
+     * @param versions         the list of version strings to evaluate
+     * @param policy           the version policy to apply
      * @param repositorySource the source repository name
      * @return a list of version candidates that pass the policy, sorted in descending order
      */
@@ -38,6 +37,13 @@ public class VersionPolicyEvaluator {
             }
         }
 
+        // `versions` arrives in repository publish order (oldest first, per Maven convention -
+        // see MavenMetadataParser). Reverse before the stable sort so that versions which compare
+        // as equal (e.g. same major.minor.patch with an unrecognized branch/PR suffix such as
+        // "2.0.17-pr-318-58c17607") tie-break to the most recently published one instead of the
+        // oldest.
+        Collections.reverse(candidates);
+
         // Sort in descending order (highest version first)
         candidates.sort(Collections.reverseOrder());
         return candidates;
@@ -46,17 +52,17 @@ public class VersionPolicyEvaluator {
     /**
      * Finds the best (highest) version candidate that passes the policy and is greater than the current version.
      *
-     * @param versions the list of available version strings
-     * @param currentVersion the current version string
-     * @param policy the version policy to apply
+     * @param versions         the list of available version strings
+     * @param currentVersion   the current version string
+     * @param policy           the version policy to apply
      * @param repositorySource the source repository name
      * @return the best version candidate, or null if no upgrade is available
      */
     @Nullable
     public VersionCandidate findBestCandidate(@NotNull List<String> versions,
-                                               @NotNull String currentVersion,
-                                               @NotNull VersionPolicy policy,
-                                               @NotNull String repositorySource) {
+                                              @NotNull String currentVersion,
+                                              @NotNull VersionPolicy policy,
+                                              @NotNull String repositorySource) {
         return findBestCandidate(versions, currentVersion, policy, repositorySource, null);
     }
 
@@ -64,19 +70,19 @@ public class VersionPolicyEvaluator {
      * Finds the best (highest) version candidate that passes the policy and is greater than the current version.
      * Optionally filters versions using a regex pattern.
      *
-     * @param versions the list of available version strings
-     * @param currentVersion the current version string
-     * @param policy the version policy to apply
+     * @param versions         the list of available version strings
+     * @param currentVersion   the current version string
+     * @param policy           the version policy to apply
      * @param repositorySource the source repository name
-     * @param excludeRegex optional regex pattern to exclude versions (e.g., ".*-SNAPSHOT")
+     * @param excludeRegex     optional regex pattern to exclude versions (e.g., ".*-SNAPSHOT")
      * @return the best version candidate, or null if no upgrade is available
      */
     @Nullable
     public VersionCandidate findBestCandidate(@NotNull List<String> versions,
-                                               @NotNull String currentVersion,
-                                               @NotNull VersionPolicy policy,
-                                               @NotNull String repositorySource,
-                                               @Nullable String excludeRegex) {
+                                              @NotNull String currentVersion,
+                                              @NotNull VersionPolicy policy,
+                                              @NotNull String repositorySource,
+                                              @Nullable String excludeRegex) {
         // Apply regex filter if provided
         List<String> filteredVersions = versions;
         if (excludeRegex != null && !excludeRegex.isEmpty()) {
@@ -101,7 +107,7 @@ public class VersionPolicyEvaluator {
         // Find the highest version that is greater than the current version
         for (VersionCandidate candidate : candidates) {
             if (candidate.semanticVersion() != null &&
-                candidate.semanticVersion().compareTo(current) > 0) {
+                    candidate.semanticVersion().compareTo(current) > 0) {
                 return candidate;
             }
         }
@@ -113,7 +119,7 @@ public class VersionPolicyEvaluator {
      * Checks if a version string matches the policy rules.
      *
      * @param version the version string to check
-     * @param policy the version policy
+     * @param policy  the version policy
      * @return true if the version passes the policy
      */
     private boolean matchesPolicy(@NotNull String version, @NotNull VersionPolicy policy) {
@@ -143,7 +149,7 @@ public class VersionPolicyEvaluator {
     /**
      * Checks if a version string matches a regex pattern.
      *
-     * @param version the version string
+     * @param version    the version string
      * @param patternStr the regex pattern string
      * @return true if the pattern matches
      */

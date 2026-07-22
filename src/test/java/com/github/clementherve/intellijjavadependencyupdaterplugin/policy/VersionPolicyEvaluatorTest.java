@@ -1,7 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.policy;
 
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
-import com.github.clementherve.intellijjavadependencyupdaterplugin.policy.VersionPolicy;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -9,7 +8,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class VersionPolicyEvaluatorTest {
 
@@ -25,10 +27,10 @@ public class VersionPolicyEvaluatorTest {
     @Test
     public void test_evaluate_filters_alpha_versions() {
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "1.1.0-alpha",
-            "1.2.0",
-            "2.0.0-alpha.1"
+                "1.0.0",
+                "1.1.0-alpha",
+                "1.2.0",
+                "2.0.0-alpha.1"
         );
 
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Maven Central");
@@ -41,10 +43,10 @@ public class VersionPolicyEvaluatorTest {
     @Test
     public void test_evaluate_filters_beta_versions() {
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "1.1.0-beta",
-            "1.2.0",
-            "2.0.0-beta.1"
+                "1.0.0",
+                "1.1.0-beta",
+                "1.2.0",
+                "2.0.0-beta.1"
         );
 
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Maven Central");
@@ -57,10 +59,10 @@ public class VersionPolicyEvaluatorTest {
     @Test
     public void test_evaluate_filters_rc_versions() {
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "1.1.0-rc",
-            "1.2.0",
-            "2.0.0-rc.1"
+                "1.0.0",
+                "1.1.0-rc",
+                "1.2.0",
+                "2.0.0-rc.1"
         );
 
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Maven Central");
@@ -71,10 +73,10 @@ public class VersionPolicyEvaluatorTest {
     @Test
     public void test_evaluate_filters_snapshot_versions() {
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "1.1.0-SNAPSHOT",
-            "1.2.0",
-            "2.0.0-SNAPSHOT"
+                "1.0.0",
+                "1.1.0-SNAPSHOT",
+                "1.2.0",
+                "2.0.0-SNAPSHOT"
         );
 
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Maven Central");
@@ -87,10 +89,10 @@ public class VersionPolicyEvaluatorTest {
     @Test
     public void test_evaluate_filters_milestone_versions() {
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "1.1.0-M1",
-            "1.2.0",
-            "2.0.0-milestone.1"
+                "1.0.0",
+                "1.1.0-M1",
+                "1.2.0",
+                "2.0.0-milestone.1"
         );
 
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Maven Central");
@@ -101,10 +103,10 @@ public class VersionPolicyEvaluatorTest {
     @Test
     public void test_evaluate_sorts_in_descending_order() {
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "3.0.0",
-            "2.0.0",
-            "1.5.0"
+                "1.0.0",
+                "3.0.0",
+                "2.0.0",
+                "1.5.0"
         );
 
         List<VersionCandidate> candidates = evaluator.evaluate(versions, stablePolicy, "Maven Central");
@@ -119,10 +121,10 @@ public class VersionPolicyEvaluatorTest {
     @Test
     public void test_findBestCandidate_returns_highest_newer_version() {
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "1.5.0",
-            "2.0.0",
-            "2.1.0"
+                "1.0.0",
+                "1.5.0",
+                "2.0.0",
+                "2.1.0"
         );
 
         VersionCandidate best = evaluator.findBestCandidate(versions, "1.5.0", stablePolicy, "Maven Central");
@@ -134,9 +136,9 @@ public class VersionPolicyEvaluatorTest {
     @Test
     public void test_findBestCandidate_returns_null_when_already_latest() {
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "1.5.0",
-            "2.0.0"
+                "1.0.0",
+                "1.5.0",
+                "2.0.0"
         );
 
         VersionCandidate best = evaluator.findBestCandidate(versions, "2.0.0", stablePolicy, "Maven Central");
@@ -147,10 +149,10 @@ public class VersionPolicyEvaluatorTest {
     @Test
     public void test_findBestCandidate_skips_unstable_versions() {
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "2.0.0-alpha",
-            "2.0.0-beta",
-            "2.0.0-rc"
+                "1.0.0",
+                "2.0.0-alpha",
+                "2.0.0-beta",
+                "2.0.0-rc"
         );
 
         VersionCandidate best = evaluator.findBestCandidate(versions, "1.0.0", stablePolicy, "Maven Central");
@@ -165,10 +167,10 @@ public class VersionPolicyEvaluatorTest {
         VersionPolicy customPolicy = new VersionPolicy("Allow RC", includePatterns, excludePatterns);
 
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "2.0.0-alpha",
-            "2.0.0-rc",
-            "2.0.0"
+                "1.0.0",
+                "2.0.0-alpha",
+                "2.0.0-rc",
+                "2.0.0"
         );
 
         VersionCandidate best = evaluator.findBestCandidate(versions, "1.0.0", customPolicy, "Maven Central");
@@ -184,10 +186,10 @@ public class VersionPolicyEvaluatorTest {
         VersionPolicy policy = new VersionPolicy("No SNAPSHOT", includePatterns, excludePatterns);
 
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "1.1.0-SNAPSHOT",
-            "2.0.0-alpha",
-            "2.0.0"
+                "1.0.0",
+                "1.1.0-SNAPSHOT",
+                "2.0.0-alpha",
+                "2.0.0"
         );
 
         List<VersionCandidate> candidates = evaluator.evaluate(versions, policy, "Maven Central");
@@ -203,10 +205,10 @@ public class VersionPolicyEvaluatorTest {
         VersionPolicy policy = new VersionPolicy("Strict semver", includePatterns, excludePatterns);
 
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "1.1.0-alpha",
-            "2.0.0",
-            "3.0"
+                "1.0.0",
+                "1.1.0-alpha",
+                "2.0.0",
+                "3.0"
         );
 
         List<VersionCandidate> candidates = evaluator.evaluate(versions, policy, "Maven Central");
@@ -232,15 +234,37 @@ public class VersionPolicyEvaluatorTest {
     @Test
     public void test_findBestCandidate_with_unparseable_current_version_returns_highest() {
         List<String> versions = Arrays.asList(
-            "1.0.0",
-            "2.0.0",
-            "3.0.0"
+                "1.0.0",
+                "2.0.0",
+                "3.0.0"
         );
 
         VersionCandidate best = evaluator.findBestCandidate(versions, "unknown", stablePolicy, "Maven Central");
 
         assertNotNull(best);
         assertEquals("3.0.0", best.version());
+    }
+
+    @Test
+    public void test_evaluate_breaks_ties_by_publish_order_for_unrecognized_suffixes() {
+        // Both versions parse to the same SemanticVersion (2.0.17, no recognized qualifier)
+        // since "develop" and "pr-318" aren't recognized qualifiers. Nexus/Maven metadata
+        // lists versions oldest-first, so the "pr" build (published after "develop") must
+        // still end up first.
+        List<String> versions = Arrays.asList(
+                "2.0.17-develop-4740b57b",
+                "2.0.17-pr-318-58c17607"
+        );
+
+        List<String> includePatterns = Collections.emptyList();
+        List<String> excludePatterns = Collections.emptyList();
+        VersionPolicy policy = new VersionPolicy("Allow all", includePatterns, excludePatterns);
+
+        List<VersionCandidate> candidates = evaluator.evaluate(versions, policy, "Private Nexus");
+
+        assertEquals(2, candidates.size());
+        assertEquals("2.0.17-pr-318-58c17607", candidates.get(0).version());
+        assertEquals("2.0.17-develop-4740b57b", candidates.get(1).version());
     }
 
     @Test

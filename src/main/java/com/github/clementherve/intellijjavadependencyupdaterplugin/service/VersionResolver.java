@@ -1,5 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.service;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.DependencyNotFoundException;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.GradlePluginPortalRepository;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.MavenCentralRepository;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.NexusRepository;
@@ -43,8 +44,13 @@ final class VersionResolver {
         if (shouldUseNexus(group, artifact, settings)) {
             try {
                 List<String> versions = createNexusRepository(settings).fetchVersions(group, artifact);
-                if (versions != null && !versions.isEmpty()) {
+                if (!versions.isEmpty()) {
                     return versions;
+                }
+            } catch (DependencyNotFoundException notFound) {
+                // Expected: already logged at WARN by the repository layer.
+                if (!settings.isFallbackToMavenCentral()) {
+                    throw notFound;
                 }
             } catch (IOException exception) {
                 LOGGER.error("Nexus fetch failed for " + group + ":" + artifact + ", error: " + exception.getMessage());
