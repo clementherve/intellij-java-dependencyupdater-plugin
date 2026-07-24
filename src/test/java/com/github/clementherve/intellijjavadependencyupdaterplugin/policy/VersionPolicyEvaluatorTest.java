@@ -247,13 +247,13 @@ public class VersionPolicyEvaluatorTest {
 
     @Test
     public void test_evaluate_breaks_ties_by_publish_order_for_unrecognized_suffixes() {
-        // Both versions parse to the same SemanticVersion (2.0.17, no recognized qualifier)
-        // since "develop" and "pr-318" aren't recognized qualifiers. Nexus/Maven metadata
-        // lists versions oldest-first, so the "pr" build (published after "develop") must
+        // Both versions parse to the same SemanticVersion (2.0.17, UNRECOGNIZED qualifier)
+        // since neither "develop" nor "hotfix" are recognized qualifiers. Nexus/Maven metadata
+        // lists versions oldest-first, so the "hotfix" build (published after "develop") must
         // still end up first.
         List<String> versions = Arrays.asList(
                 "2.0.17-develop-4740b57b",
-                "2.0.17-pr-318-58c17607"
+                "2.0.17-hotfix-58c17607"
         );
 
         List<String> includePatterns = Collections.emptyList();
@@ -263,8 +263,49 @@ public class VersionPolicyEvaluatorTest {
         List<VersionCandidate> candidates = evaluator.evaluate(versions, policy, "Private Nexus");
 
         assertEquals(2, candidates.size());
-        assertEquals("2.0.17-pr-318-58c17607", candidates.get(0).version());
+        assertEquals("2.0.17-hotfix-58c17607", candidates.get(0).version());
         assertEquals("2.0.17-develop-4740b57b", candidates.get(1).version());
+    }
+
+    @Test
+    public void test_evaluate_ranks_pr_above_feat_regardless_of_publish_order() {
+        // "feat" is listed after "pr" (i.e. published more recently per Maven's oldest-first
+        // convention), but "pr" must still outrank "feat" since that ordering is an explicit
+        // qualifier priority, not a publish-order tie-break.
+        List<String> versions = Arrays.asList(
+                "1.0.3-pr",
+                "1.0.3-feat"
+        );
+
+        List<String> includePatterns = Collections.emptyList();
+        List<String> excludePatterns = Collections.emptyList();
+        VersionPolicy policy = new VersionPolicy("Allow all", includePatterns, excludePatterns);
+
+        List<VersionCandidate> candidates = evaluator.evaluate(versions, policy, "Private Nexus");
+
+        assertEquals(2, candidates.size());
+        assertEquals("1.0.3-pr", candidates.get(0).version());
+        assertEquals("1.0.3-feat", candidates.get(1).version());
+    }
+
+    @Test
+    public void test_evaluate_ranks_release_above_feat_and_pr_suffixes() {
+        List<String> versions = Arrays.asList(
+                "1.0.3-feat",
+                "1.0.3-pr",
+                "1.0.3"
+        );
+
+        List<String> includePatterns = Collections.emptyList();
+        List<String> excludePatterns = Collections.emptyList();
+        VersionPolicy policy = new VersionPolicy("Allow all", includePatterns, excludePatterns);
+
+        List<VersionCandidate> candidates = evaluator.evaluate(versions, policy, "Private Nexus");
+
+        assertEquals(3, candidates.size());
+        assertEquals("1.0.3", candidates.get(0).version());
+        assertEquals("1.0.3-pr", candidates.get(1).version());
+        assertEquals("1.0.3-feat", candidates.get(2).version());
     }
 
     @Test

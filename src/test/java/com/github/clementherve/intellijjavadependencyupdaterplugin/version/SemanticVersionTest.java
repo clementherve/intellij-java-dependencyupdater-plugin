@@ -157,6 +157,55 @@ public class SemanticVersionTest {
     }
 
     @Test
+    public void test_comparison_release_greater_than_feat_and_pr() {
+        SemanticVersion release = SemanticVersion.parse("1.0.3");
+        SemanticVersion feat = SemanticVersion.parse("1.0.3-feat");
+        SemanticVersion pr = SemanticVersion.parse("1.0.3-pr");
+        assertNotNull(release);
+        assertNotNull(feat);
+        assertNotNull(pr);
+        assertTrue(release.compareTo(feat) > 0);
+        assertTrue(release.compareTo(pr) > 0);
+    }
+
+    @Test
+    public void test_comparison_pr_greater_than_feat() {
+        SemanticVersion feat = SemanticVersion.parse("1.0.3-feat");
+        SemanticVersion pr = SemanticVersion.parse("1.0.3-pr");
+        assertNotNull(feat);
+        assertNotNull(pr);
+        assertTrue(pr.compareTo(feat) > 0);
+    }
+
+    @Test
+    public void test_comparison_feat_and_pr_greater_than_unrecognized_suffix() {
+        SemanticVersion unrecognized = SemanticVersion.parse("1.0.3-develop");
+        SemanticVersion feat = SemanticVersion.parse("1.0.3-feat");
+        SemanticVersion pr = SemanticVersion.parse("1.0.3-pr");
+        assertNotNull(unrecognized);
+        assertNotNull(feat);
+        assertNotNull(pr);
+        assertTrue(feat.compareTo(unrecognized) > 0);
+        assertTrue(pr.compareTo(unrecognized) > 0);
+    }
+
+    @Test
+    public void test_comparison_unrecognized_suffixes_are_equal() {
+        SemanticVersion develop = SemanticVersion.parse("1.0.3-develop-4740b57b");
+        SemanticVersion hotfix = SemanticVersion.parse("1.0.3-hotfix-58c17607");
+        assertNotNull(develop);
+        assertNotNull(hotfix);
+        assertEquals(0, develop.compareTo(hotfix));
+    }
+
+    @Test
+    public void test_isStable_false_for_feat_and_pr_and_unrecognized_suffixes() {
+        assertFalse(SemanticVersion.parse("1.0.3-feat").isStable());
+        assertFalse(SemanticVersion.parse("1.0.3-pr").isStable());
+        assertFalse(SemanticVersion.parse("1.0.3-develop").isStable());
+    }
+
+    @Test
     public void test_comparison_qualifier_versions() {
         SemanticVersion alpha1 = SemanticVersion.parse("1.0.0-alpha.1");
         SemanticVersion alpha2 = SemanticVersion.parse("1.0.0-alpha.2");

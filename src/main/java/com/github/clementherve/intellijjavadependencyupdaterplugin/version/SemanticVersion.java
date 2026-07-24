@@ -9,14 +9,15 @@ import java.util.regex.Pattern;
 
 /**
  * Represents a semantic version with support for major.minor.patch versioning
- * and common qualifiers like alpha, beta, rc, snapshot.
+ * and common qualifiers like alpha, beta, rc, snapshot, feat, pr.
  */
 public class SemanticVersion implements Comparable<SemanticVersion> {
 
     private static final Pattern VERSION_PATTERN = Pattern.compile(
         "^(\\d+)(?:\\.(\\d+))?(?:\\.(\\d+))?" +                    // major.minor.patch
-        "(?:[-.]?(alpha|beta|milestone|m|rc|snapshot))?" +         // qualifier
-        "(?:[-.]?(\\d+))?.*$",                                     // qualifier version
+        "(?:[-.]?(alpha|beta|milestone|m|rc|snapshot|feat|pr)(?![a-zA-Z]))?" + // qualifier
+        "(?:[-.]?(\\d+))?" +                                       // qualifier version
+        "(.*)$",                                                   // unrecognized remainder
         Pattern.CASE_INSENSITIVE
     );
 
@@ -32,8 +33,14 @@ public class SemanticVersion implements Comparable<SemanticVersion> {
         BETA(2),
         MILESTONE(3),
         RC(4),
-        RELEASE(5),
-        SNAPSHOT(6);
+        // Unrecognized branch/build suffix (e.g. "-develop", "-abc123"). Ranked below FEAT/PR
+        // since we can't tell what it represents; ties among these are broken by publish order
+        // in VersionPolicyEvaluator rather than here.
+        UNRECOGNIZED(5),
+        FEAT(6),
+        PR(7),
+        RELEASE(8),
+        SNAPSHOT(9);
 
         private final int priority;
 
@@ -55,6 +62,8 @@ public class SemanticVersion implements Comparable<SemanticVersion> {
                 case "beta", "b" -> BETA;
                 case "milestone", "m" -> MILESTONE;
                 case "rc" -> RC;
+                case "feat" -> FEAT;
+                case "pr" -> PR;
                 case "snapshot" -> SNAPSHOT;
                 default -> RELEASE;
             };
@@ -96,9 +105,15 @@ public class SemanticVersion implements Comparable<SemanticVersion> {
             int patch = matcher.group(3) != null ? Integer.parseInt(matcher.group(3)) : 0;
 
             String qualifierStr = matcher.group(4);
-            Qualifier qualifier = Qualifier.fromString(qualifierStr);
-
-            int qualifierVersion = matcher.group(5) != null ? Integer.parseInt(matcher.group(5)) : 0;
+            Qualifier qualifier;
+            int qualifierVersion = 0;
+            if (qualifierStr != null) {
+                qualifier = Qualifier.fromString(qualifierStr);
+                qualifierVersion = matcher.group(5) != null ? Integer.parseInt(matcher.group(5)) : 0;
+            } else {
+                String remainder = matcher.group(6);
+                qualifier = (remainder != null && !remainder.isEmpty()) ? Qualifier.UNRECOGNIZED : Qualifier.RELEASE;
+            }
 
             return new SemanticVersion(major, minor, patch, qualifier, qualifierVersion, trimmed);
         } catch (NumberFormatException e) {
@@ -144,7 +159,7 @@ public class SemanticVersion implements Comparable<SemanticVersion> {
         result = Integer.compare(this.patch, other.patch);
         if (result != 0) return result;
 
-        // Compare qualifier (alpha < beta < rc < release < snapshot)
+        // Compare qualifier (alpha < beta < rc < unrecognized < feat < pr < release < snapshot)
         result = Integer.compare(this.qualifier.getPriority(), other.qualifier.getPriority());
         if (result != 0) return result;
 

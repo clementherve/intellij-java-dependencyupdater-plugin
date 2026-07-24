@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- Version ordering: plain releases (e.g. `1.0.3`) now correctly rank above `-feat`/`-pr` and other unrecognized branch/build suffixes of the same version, and `-pr` suffixes always rank above `-feat` suffixes.
+
 ## 0.0.1
 
 Initial release of the plugin
@@ -27,7 +30,7 @@ Initial release of the plugin
 
 ### Fix
 - Settings values not properly showing after saving
-- support for ${variable} format in gstring
+- Support for ${variable} format in gstring
 - Removed deprecated dependencies
 
 ## 0.0.4
