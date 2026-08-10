@@ -1,0 +1,62 @@
+# GitHub Actions workflow to publish a stable release directly to the JetBrains Marketplace.
+# Triggered by pushing a stable version tag (no pre-release suffix, e.g. `0.0.5`, but not `0.0.5-dev4`).
+# Uploads the built plugin ZIP straight to the Marketplace upload API:
+# https://plugins.jetbrains.com/docs/marketplace/plugin-upload.html#post
+#
+# Requires the PUBLISH_TOKEN secret (a permanent token from your JetBrains Marketplace profile).
+
+name: Publish to Marketplace
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+
+  publish:
+    name: Publish Plugin
+    runs-on: ubuntu-latest
+    # Only run for stable tags: no hyphen (excludes -dev, -rc, -beta, etc.)
+    if: ${{ !contains(github.ref_name, '-') }}
+    steps:
+
+      # Check out the current repository
+      - name: Fetch Sources
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+
+      # Set up the Java environment for the next steps
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: 21
+
+      # Setup Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
+
+      # Build plugin distribution ZIP
+      - name: Build Plugin
+        run: ./gradlew buildPlugin
+
+      # Upload the plugin ZIP directly to the JetBrains Marketplace upload API
+      - name: Publish to Marketplace
+        env:
+          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+        run: |
+          PLUGIN_ZIP=$(find ./build/distributions -maxdepth 1 -name '*.zip' | head -n 1)
+
+          if [ -z "$PLUGIN_ZIP" ]; then
+            echo "No plugin ZIP found in ./build/distributions" >&2
+            exit 1
+          fi
+
+          curl -i --fail \
+            --header "Authorization: Bearer $PUBLISH_TOKEN" \
+            -F xmlId=com.github.clementherve.intellijjavadependencyupdaterplugin \
+            -F file=@"$PLUGIN_ZIP" \
+            https://plugins.jetbrains.com/api/updates/upload
