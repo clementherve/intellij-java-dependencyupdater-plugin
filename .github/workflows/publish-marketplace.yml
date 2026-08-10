@@ -1,4 +1,5 @@
-# GitHub Actions workflow to publish a stable release directly to the JetBrains Marketplace.
+# GitHub Actions workflow to publish a stable release directly to the JetBrains Marketplace
+# and attach the built plugin ZIP to the corresponding GitHub Release.
 # Triggered by pushing a stable version tag (no pre-release suffix, e.g. `0.0.5`, but not `0.0.5-dev4`).
 # Uploads the built plugin ZIP straight to the Marketplace upload API:
 # https://plugins.jetbrains.com/docs/marketplace/plugin-upload.html#post
@@ -16,6 +17,8 @@ jobs:
   publish:
     name: Publish Plugin
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     # Only run for stable tags: no hyphen (excludes -dev, -rc, -beta, etc.)
     if: ${{ !contains(github.ref_name, '-') }}
     steps:
@@ -43,10 +46,8 @@ jobs:
       - name: Build Plugin
         run: ./gradlew buildPlugin
 
-      # Upload the plugin ZIP directly to the JetBrains Marketplace upload API
-      - name: Publish to Marketplace
-        env:
-          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+      # Locate the built plugin ZIP for the following steps
+      - name: Locate Plugin ZIP
         run: |
           PLUGIN_ZIP=$(find ./build/distributions -maxdepth 1 -name '*.zip' | head -n 1)
 
@@ -55,8 +56,28 @@ jobs:
             exit 1
           fi
 
+          echo "PLUGIN_ZIP=$PLUGIN_ZIP" >> "$GITHUB_ENV"
+
+      # Upload the plugin ZIP directly to the JetBrains Marketplace upload API
+      - name: Publish to Marketplace
+        env:
+          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+        run: |
           curl -i --fail \
             --header "Authorization: Bearer $PUBLISH_TOKEN" \
             -F xmlId=com.github.clementherve.intellijjavadependencyupdaterplugin \
             -F file=@"$PLUGIN_ZIP" \
             https://plugins.jetbrains.com/api/updates/upload
+
+      # Attach the plugin ZIP to the GitHub Release for this tag, creating the release if needed
+      - name: Publish GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${{ github.ref_name }}" >/dev/null 2>&1; then
+            gh release upload "${{ github.ref_name }}" "$PLUGIN_ZIP" --clobber
+          else
+            gh release create "${{ github.ref_name }}" "$PLUGIN_ZIP" \
+              --title "${{ github.ref_name }}" \
+              --generate-notes
+          fi
