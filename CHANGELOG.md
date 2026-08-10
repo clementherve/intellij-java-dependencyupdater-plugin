@@ -4,8 +4,6 @@
 
 ## [Unreleased]
 
-### Fixed
-- Version ordering: plain releases (e.g. `1.0.3`) now correctly rank above `-feat`/`-pr` and other unrecognized branch/build suffixes of the same version, and `-pr` suffixes always rank above `-feat` suffixes.
 
 ## 0.0.1
 
@@ -41,3 +39,11 @@ Initial release of the plugin
 
 ### Fix
 - Optimised refresh and parsing
+
+## 0.0.5
+
+### Added
+- Not found dependencies are now highlighted in red instead of being silently ignored
+
+### Fix
+- Version ordering: plain releases (e.g. `1.0.3`) now correctly rank above `-feat`/`-pr` and other unrecognized branch/build suffixes of the same version, and `-pr` suffixes always rank above `-feat` suffixes.
