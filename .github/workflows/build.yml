@@ -166,7 +166,7 @@ jobs:
 
       # Download the plugin ZIP built by the 'build' job
       - name: Download Plugin Artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: plugin-distribution
           path: ./build/distributions
