@@ -3,8 +3,12 @@ package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwind
 import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.Dependency;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.service.DependencyUpdateService;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBScrollPane;
@@ -15,6 +19,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.util.List;
 
 /**
@@ -22,15 +27,22 @@ import java.util.List;
  */
 public class VersionPickerDialog extends DialogWrapper {
 
+    private final Project project;
     private final Dependency dependency;
-    private final List<VersionCandidate> availableVersions;
+    private final DependencyUpdateService service;
+    private List<VersionCandidate> availableVersions;
     private JBList<String> versionList;
+    private RefreshAction refreshAction;
     private String selectedVersion;
 
-    public VersionPickerDialog(@NotNull Project project, @NotNull Dependency dependency, @NotNull List<VersionCandidate> availableVersions) {
+    public VersionPickerDialog(@NotNull Project project, @NotNull Dependency dependency,
+                               @NotNull List<VersionCandidate> availableVersions,
+                               @NotNull DependencyUpdateService service) {
         super(project);
+        this.project = project;
         this.dependency = dependency;
         this.availableVersions = availableVersions;
+        this.service = service;
 
         setTitle("Select Version for " + dependency.artifact());
         init();
@@ -79,6 +91,68 @@ public class VersionPickerDialog extends DialogWrapper {
         return panel;
     }
 
+    @NotNull
+    @Override
+    protected Action[] createLeftSideActions() {
+        refreshAction = new RefreshAction();
+        return new Action[]{refreshAction};
+    }
+
+    private void refreshVersions() {
+        refreshAction.setEnabled(false);
+
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Refreshing " + dependency.artifact(), false) {
+            private List<VersionCandidate> refreshed;
+            private Exception failure;
+
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                    service.forceCheckForUpdate(dependency);
+                    refreshed = service.getAllCandidatesFromCache(dependency);
+                } catch (Exception exception) {
+                    failure = exception;
+                }
+            }
+
+            @Override
+            public void onSuccess() {
+                refreshAction.setEnabled(true);
+
+                if (failure != null) {
+                    Messages.showErrorDialog(
+                            project,
+                            "Failed to refresh " + dependency.artifact() + ": " + failure.getMessage(),
+                            "Refresh Dependency"
+                    );
+                    return;
+                }
+
+                updateVersionList(refreshed);
+            }
+        });
+    }
+
+    private void updateVersionList(@NotNull List<VersionCandidate> versions) {
+        this.availableVersions = versions;
+        String[] versionStrings = versions.stream().map(VersionCandidate::version).toArray(String[]::new);
+        versionList.setListData(versionStrings);
+        if (versionStrings.length > 0) {
+            versionList.setSelectedIndex(0);
+        }
+    }
+
+    private final class RefreshAction extends AbstractAction {
+        RefreshAction() {
+            super("Refresh");
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            refreshVersions();
+        }
+    }
+
     @Override
     protected void doOKAction() {
         String selected = versionList.getSelectedValue();
@@ -102,7 +176,7 @@ public class VersionPickerDialog extends DialogWrapper {
             return null;
         }
 
-        VersionPickerDialog dialog = new VersionPickerDialog(project, dependency, versions);
+        VersionPickerDialog dialog = new VersionPickerDialog(project, dependency, versions, service);
         if (dialog.showAndGet()) {
             return dialog.getSelectedVersion();
         }

@@ -6,6 +6,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.version.Versi
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.BuildFileParser;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.BuildFileParserFactory;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.service.DependencyUpdateService;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.service.ParallelDependencyChecker;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.SupportedBuildFile;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.update.DependencyVersionWriter;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -23,8 +24,10 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.SmartPsiElementPointer;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Action to update all outdated dependencies in the current file.
@@ -65,27 +68,49 @@ public class UpdateAllDependenciesAction extends AnAction {
                 DependencyUpdateService dependencyUpdateService = DependencyUpdateService.getInstance(project);
                 indicator.setText("Checking for updates...");
 
-                for (int i = 0; i < dependencies.size(); i++) {
+                // Cache hits are free (no network) - resolve those first, sequentially.
+                List<Dependency> needsNetworkCheck = new ArrayList<>();
+                for (Dependency dependency : dependencies) {
                     if (indicator.isCanceled()) {
                         return;
                     }
 
-                    Dependency dependency = dependencies.get(i);
-                    indicator.setFraction((double) i / dependencies.size());
-                    indicator.setText2("Checking " + dependency.artifact() + "...");
+                    VersionCandidate cached = dependencyUpdateService.getFromCache(dependency);
+                    if (cached != null) {
+                        dependenciesWithUpdateCandidates.put(dependency, cached);
+                    } else {
+                        needsNetworkCheck.add(dependency);
+                    }
+                }
 
-                    VersionCandidate candidate = dependencyUpdateService.getFromCache(dependency);
-                    if (candidate == null) {
-                        try {
-                            candidate = dependencyUpdateService.checkForUpdate(dependency);
-                        } catch (DependencyNotFoundException notFound) {
-                            candidate = null;
+                if (indicator.isCanceled() || needsNetworkCheck.isEmpty()) {
+                    return;
+                }
+
+                // The rest need a repository round-trip - run those concurrently instead of one at a time.
+                AtomicInteger completedCount = new AtomicInteger(0);
+                ParallelDependencyChecker.run(
+                        needsNetworkCheck,
+                        indicator,
+                        dependency -> checkForUpdate(dependencyUpdateService, dependency),
+                        (dependency, candidate) -> {
+                            int completed = completedCount.incrementAndGet();
+                            indicator.setFraction((double) completed / needsNetworkCheck.size());
+                            indicator.setText2("Checked " + completed + " of " + needsNetworkCheck.size() + " dependencies...");
+
+                            if (candidate != null) {
+                                dependenciesWithUpdateCandidates.put(dependency, candidate);
+                            }
                         }
-                    }
+                );
+            }
 
-                    if (candidate != null) {
-                        dependenciesWithUpdateCandidates.put(dependency, candidate);
-                    }
+            @Nullable
+            private VersionCandidate checkForUpdate(@NotNull DependencyUpdateService dependencyUpdateService, @NotNull Dependency dependency) {
+                try {
+                    return dependencyUpdateService.checkForUpdate(dependency);
+                } catch (DependencyNotFoundException notFound) {
+                    return null;
                 }
             }
 
