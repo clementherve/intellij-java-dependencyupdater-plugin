@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+Dependency recuperation performance improvement.
+
+### Added
+- Refresh a single dependency
 
 ## 0.0.1
 
