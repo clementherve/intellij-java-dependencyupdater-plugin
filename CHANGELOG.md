@@ -4,12 +4,6 @@
 
 ## [Unreleased]
 
-Dependency recuperation performance improvement and security scanner.
-
-### Added
-- Refresh a single dependency
-- Open Security Vulnerability scanner (except for nexus dependencies)
-
 ## 0.0.1
 
 Initial release of the plugin
@@ -52,3 +46,10 @@ Initial release of the plugin
 
 ### Fix
 - Version ordering: plain releases (e.g. `1.0.3`) now correctly rank above `-feat`/`-pr` and other unrecognized branch/build suffixes of the same version, and `-pr` suffixes always rank above `-feat` suffixes.
+
+## 0.0.6
+
+Dependency recuperation performance improvement and security scanner.
+### Added
+- Refresh a single dependency
+- Open Security Vulnerability scanner (except for nexus dependencies)
