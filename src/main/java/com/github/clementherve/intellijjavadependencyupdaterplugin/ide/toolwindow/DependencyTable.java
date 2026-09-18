@@ -1,6 +1,9 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.settings.DependencyUpdaterSettings;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow.DependencyRow;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.vulnerability.Vulnerability;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.vulnerability.VulnerabilityStatus;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
@@ -25,9 +28,11 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableRowSorter;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * The dependency table view: owns the table, its model, sorting, the search/filter field and
@@ -44,11 +49,28 @@ class DependencyTable {
     }
 
     private static final int PROJECT_COLUMN_INDEX = 5;
+    private static final int VULNERABILITY_COLUMN_INDEX = DependencyTableModel.VULNERABILITY_COLUMN_INDEX;
 
     private final Project project;
     private final Listener listener;
     private final DependencyTableModel model = new DependencyTableModel();
-    private final JBTable table = new JBTable(model);
+    private final JBTable table = new JBTable(model) {
+        @Override
+        public String getToolTipText(@NotNull MouseEvent event) {
+            int viewRow = rowAtPoint(event.getPoint());
+            int viewColumn = columnAtPoint(event.getPoint());
+            if (viewRow < 0 || viewColumn < 0 || convertColumnIndexToModel(viewColumn) != VULNERABILITY_COLUMN_INDEX) {
+                return super.getToolTipText(event);
+            }
+
+            List<Vulnerability> vulnerabilities = model.getRow(convertRowIndexToModel(viewRow)).vulnerabilityReport().vulnerabilities();
+            if (vulnerabilities.isEmpty()) {
+                return super.getToolTipText(event);
+            }
+
+            return vulnerabilities.stream().map(Vulnerability::id).collect(Collectors.joining(", "));
+        }
+    };
     private final TableRowSorter<DependencyTableModel> sorter;
     private final JComponent component;
 
@@ -60,6 +82,7 @@ class DependencyTable {
         table.setRowSorter(sorter);
         table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         table.setDefaultRenderer(Object.class, new StatusAwareCellRenderer(model));
+        table.setToolTipText(""); // registers the table with ToolTipManager so getToolTipText(MouseEvent) is consulted
         installMouseListener();
 
         this.component = buildComponent();
@@ -73,6 +96,7 @@ class DependencyTable {
     void setRows(@NotNull List<DependencyRow> rows) {
         model.setRows(rows);
         updateProjectColumnVisibility();
+        updateVulnerabilityColumnVisibility();
     }
 
     @NotNull
@@ -178,9 +202,23 @@ class DependencyTable {
         }
     }
 
+    private void updateVulnerabilityColumnVisibility() {
+        TableColumn vulnerabilityColumn = table.getColumnModel().getColumn(VULNERABILITY_COLUMN_INDEX);
+        if (DependencyUpdaterSettings.getInstance().isVulnerabilityScanningEnabled()) {
+            vulnerabilityColumn.setMinWidth(50);
+            vulnerabilityColumn.setMaxWidth(Integer.MAX_VALUE);
+            vulnerabilityColumn.setPreferredWidth(140);
+        } else {
+            vulnerabilityColumn.setMinWidth(0);
+            vulnerabilityColumn.setMaxWidth(0);
+            vulnerabilityColumn.setPreferredWidth(0);
+        }
+    }
+
     /**
      * Renders every cell of a row in red when its dependency could not be found in the
-     * repository, so a lookup failure is visible instead of blending in as "up to date".
+     * repository, so a lookup failure is visible instead of blending in as "up to date". Also
+     * renders the vulnerability column in red when known vulnerabilities were found.
      */
     private static final class StatusAwareCellRenderer extends DefaultTableCellRenderer {
 
@@ -197,9 +235,14 @@ class DependencyTable {
 
             if (!isSelected) {
                 DependencyRow dependencyRow = model.getRow(table.convertRowIndexToModel(row));
-                component.setForeground(dependencyRow.status() == DependencyRow.Status.NOT_FOUND
-                        ? JBColor.RED
-                        : table.getForeground());
+                boolean isVulnerabilityCell = table.convertColumnIndexToModel(column) == VULNERABILITY_COLUMN_INDEX;
+                boolean isVulnerable = dependencyRow.vulnerabilityReport().status() == VulnerabilityStatus.VULNERABLE;
+
+                if (dependencyRow.status() == DependencyRow.Status.NOT_FOUND || (isVulnerabilityCell && isVulnerable)) {
+                    component.setForeground(JBColor.RED);
+                } else {
+                    component.setForeground(table.getForeground());
+                }
             }
 
             return component;

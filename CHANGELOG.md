@@ -4,10 +4,11 @@
 
 ## [Unreleased]
 
-Dependency recuperation performance improvement.
+Dependency recuperation performance improvement and security scanner.
 
 ### Added
 - Refresh a single dependency
+- Open Security Vulnerability scanner (except for nexus dependencies)
 
 ## 0.0.1
 

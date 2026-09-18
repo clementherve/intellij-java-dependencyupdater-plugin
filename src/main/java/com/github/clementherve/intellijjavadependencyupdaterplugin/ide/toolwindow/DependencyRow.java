@@ -3,6 +3,7 @@ package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwind
 import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.Dependency;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionChangeClassifier;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.vulnerability.VulnerabilityReport;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
  * Represents a row in the dependency table.
  */
 public record DependencyRow(Dependency dependency, VersionCandidate latestVersion, Status status,
-                            String updateType, String projectName) {
+                            String updateType, String projectName, VulnerabilityReport vulnerabilityReport) {
 
     /**
      * Where a dependency stands relative to the repository it was resolved against.
@@ -23,17 +24,21 @@ public record DependencyRow(Dependency dependency, VersionCandidate latestVersio
                          @Nullable VersionCandidate latestVersion,
                          @NotNull Status status,
                          @Nullable String updateType,
-                         @NotNull String projectName) {
+                         @NotNull String projectName,
+                         @NotNull VulnerabilityReport vulnerabilityReport) {
         this.dependency = dependency;
         this.latestVersion = latestVersion;
         this.status = status;
         this.updateType = updateType;
         this.projectName = projectName;
+        this.vulnerabilityReport = vulnerabilityReport;
     }
 
     /**
      * Builds a row for a dependency, deriving its status and change kind from the latest
-     * available version ({@code null} latest version means the dependency is up to date).
+     * available version ({@code null} latest version means the dependency is up to date). The
+     * vulnerability scan runs as a separate pass, so new rows start out as
+     * {@link VulnerabilityReport#NOT_CHECKED} - see {@link #withVulnerabilityReport}.
      */
     @NotNull
     public static DependencyRow from(@NotNull Dependency dependency,
@@ -49,7 +54,7 @@ public record DependencyRow(Dependency dependency, VersionCandidate latestVersio
             updateType = VersionChangeClassifier.describe(dependency.currentVersion(), latestVersion.version());
         }
 
-        return new DependencyRow(dependency, latestVersion, status, updateType, projectName);
+        return new DependencyRow(dependency, latestVersion, status, updateType, projectName, VulnerabilityReport.NOT_CHECKED);
     }
 
     /**
@@ -57,6 +62,14 @@ public record DependencyRow(Dependency dependency, VersionCandidate latestVersio
      */
     @NotNull
     public static DependencyRow notFound(@NotNull Dependency dependency, @NotNull String projectName) {
-        return new DependencyRow(dependency, null, Status.NOT_FOUND, null, projectName);
+        return new DependencyRow(dependency, null, Status.NOT_FOUND, null, projectName, VulnerabilityReport.NOT_CHECKED);
+    }
+
+    /**
+     * Returns a copy of this row carrying the given vulnerability scan result.
+     */
+    @NotNull
+    public DependencyRow withVulnerabilityReport(@NotNull VulnerabilityReport vulnerabilityReport) {
+        return new DependencyRow(dependency, latestVersion, status, updateType, projectName, vulnerabilityReport);
     }
 }

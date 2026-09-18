@@ -1,6 +1,7 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.service;
 
 import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.DependencyNotFoundException;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.RepositorySource;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.VersionCache;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.Dependency;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
@@ -220,7 +221,17 @@ public final class DependencyUpdateService {
 
     @NotNull
     private String repositorySourceName(@NotNull Dependency dependency) {
-        return versionResolver.resolveSource(dependency.group(), dependency.artifact()).getDisplayName();
+        return resolveRepositorySource(dependency).getDisplayName();
+    }
+
+    /**
+     * Returns the repository a dependency's versions are (or would be) resolved from, without
+     * performing any network call. Used to decide whether a dependency is eligible for checks
+     * that must never reach an internal/private repository, such as the vulnerability scan.
+     */
+    @NotNull
+    public RepositorySource resolveRepositorySource(@NotNull Dependency dependency) {
+        return versionResolver.resolveSource(dependency.group(), dependency.artifact());
     }
 
     /**

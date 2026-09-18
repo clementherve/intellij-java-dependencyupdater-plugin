@@ -5,10 +5,14 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.De
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.BuildFileParser;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.BuildFileParserFactory;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.settings.DependencyUpdaterSettings;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.DependencyNotFoundException;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.repository.RepositorySource;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.service.DependencyUpdateService;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.service.ParallelDependencyChecker;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow.DependencyRow;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.vulnerability.VulnerabilityReport;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.vulnerability.VulnerabilityScanner;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -24,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.github.clementherve.intellijjavadependencyupdaterplugin.buildfile.BuildFileLocator.findBuildGradleFilesInCurrentProject;
@@ -89,6 +94,7 @@ class DependencyScanController {
                 }
 
                 checkEntries(entries, indicator, forceRefresh);
+                scanVulnerabilities(indicator);
             }
 
             @NotNull
@@ -168,6 +174,46 @@ class DependencyScanController {
                 } catch (IOException exception) {
                     LOGGER.warn("Failed to check for update: " + dependency.getFullCoordinates(), exception);
                     return new CheckOutcome(null, false);
+                }
+            }
+
+            /**
+             * Scans the dependencies resolved from a public repository (Maven Central) for known
+             * vulnerabilities. Dependencies resolved from Nexus, or for which lookup already
+             * failed, are never included - they're skipped before anything is sent externally.
+             * No-op if the feature is disabled in settings.
+             */
+            private void scanVulnerabilities(@NotNull ProgressIndicator indicator) {
+                if (indicator.isCanceled() || !DependencyUpdaterSettings.getInstance().isVulnerabilityScanningEnabled()) {
+                    return;
+                }
+
+                DependencyUpdateService service = DependencyUpdateService.getInstance(project);
+                List<Dependency> eligible = new ArrayList<>();
+                for (DependencyRow row : rows) {
+                    if (row.status() != DependencyRow.Status.NOT_FOUND
+                            && service.resolveRepositorySource(row.dependency()) == RepositorySource.MAVEN_CENTRAL) {
+                        eligible.add(row.dependency());
+                    }
+                }
+
+                if (eligible.isEmpty()) {
+                    return;
+                }
+
+                report(indicator, DependencyUpdaterBundle.message("toolWindow.checkingVulnerabilities"));
+
+                Map<String, VulnerabilityReport> reports = new VulnerabilityScanner().scan(eligible);
+                if (reports.isEmpty()) {
+                    return;
+                }
+
+                for (int i = 0; i < rows.size(); i++) {
+                    DependencyRow row = rows.get(i);
+                    VulnerabilityReport report = reports.get(row.dependency().getFullCoordinates());
+                    if (report != null) {
+                        rows.set(i, row.withVulnerabilityReport(report));
+                    }
                 }
             }
 
