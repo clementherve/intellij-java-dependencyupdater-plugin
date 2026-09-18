@@ -31,6 +31,7 @@ public class DependencyUpdaterSettingsPanel {
     private final JBCheckBox showInlayHintsCheckBox;
     private final ComboBox<DependencyUpdaterSettings.TriggerMode> triggerModeComboBox;
     private final JBTextField versionFilterRegexField;
+    private final JBCheckBox vulnerabilityScanningCheckBox;
     private String cachedPassword = "";
 
     public DependencyUpdaterSettingsPanel() {
@@ -46,6 +47,8 @@ public class DependencyUpdaterSettingsPanel {
         showInlayHintsCheckBox = new JBCheckBox(DependencyUpdaterBundle.message("settings.showInlayHints"));
 
         versionFilterRegexField = new JBTextField();
+
+        vulnerabilityScanningCheckBox = new JBCheckBox(DependencyUpdaterBundle.message("settings.vulnerabilityScanning"));
 
         triggerModeComboBox = new ComboBox<>(DependencyUpdaterSettings.TriggerMode.values());
         triggerModeComboBox.setRenderer(new DefaultListCellRenderer() {
@@ -79,6 +82,9 @@ public class DependencyUpdaterSettingsPanel {
                 .addSeparator(5)
                 .addLabeledComponent(new JBLabel(DependencyUpdaterBundle.message("settings.versionFilterRegex")), versionFilterRegexField, 1, false)
                 .addComponentToRightColumn(new JBLabel(DependencyUpdaterBundle.message("settings.versionFilterRegexHint")), 0)
+                .addSeparator(5)
+                .addComponent(vulnerabilityScanningCheckBox, 1)
+                .addComponentToRightColumn(new JBLabel(DependencyUpdaterBundle.message("settings.vulnerabilityScanningHint")), 0)
                 .addSeparator(10)
                 .addComponentFillVertically(new JPanel(), 0)
                 .getPanel();
@@ -114,6 +120,8 @@ public class DependencyUpdaterSettingsPanel {
 
         if (!versionFilterRegexField.getText().equals(settings.getVersionFilterRegex())) return true;
 
+        if (vulnerabilityScanningCheckBox.isSelected() != settings.isVulnerabilityScanningEnabled()) return true;
+
         return !nexusDependencyRegexField.getText().equals(settings.getNexusDependencyRegex());
     }
 
@@ -141,6 +149,7 @@ public class DependencyUpdaterSettingsPanel {
 
         settings.setVersionFilterRegex(versionFilterRegexField.getText());
         settings.setNexusDependencyRegex(nexusDependencyRegexField.getText());
+        settings.setVulnerabilityScanningEnabled(vulnerabilityScanningCheckBox.isSelected());
     }
 
     public void reset() {
@@ -164,5 +173,6 @@ public class DependencyUpdaterSettingsPanel {
         triggerModeComboBox.setSelectedItem(settings.getTriggerMode());
         versionFilterRegexField.setText(settings.getVersionFilterRegex());
         nexusDependencyRegexField.setText(settings.getNexusDependencyRegex());
+        vulnerabilityScanningCheckBox.setSelected(settings.isVulnerabilityScanningEnabled());
     }
 }

@@ -1,14 +1,20 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.Dependency;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.service.DependencyUpdateService;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.vulnerability.Vulnerability;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.vulnerability.VulnerabilityReport;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.vulnerability.VulnerabilityStatus;
+import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.ui.components.ActionLink;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBScrollPane;
@@ -20,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.List;
 
 /**
@@ -29,6 +36,7 @@ public class VersionPickerDialog extends DialogWrapper {
 
     private final Project project;
     private final Dependency dependency;
+    private final VulnerabilityReport vulnerabilityReport;
     private final DependencyUpdateService service;
     private List<VersionCandidate> availableVersions;
     private JBList<String> versionList;
@@ -36,11 +44,13 @@ public class VersionPickerDialog extends DialogWrapper {
     private String selectedVersion;
 
     public VersionPickerDialog(@NotNull Project project, @NotNull Dependency dependency,
+                               @NotNull VulnerabilityReport vulnerabilityReport,
                                @NotNull List<VersionCandidate> availableVersions,
                                @NotNull DependencyUpdateService service) {
         super(project);
         this.project = project;
         this.dependency = dependency;
+        this.vulnerabilityReport = vulnerabilityReport;
         this.availableVersions = availableVersions;
         this.service = service;
 
@@ -72,13 +82,19 @@ public class VersionPickerDialog extends DialogWrapper {
         JBScrollPane scrollPane = new JBScrollPane(versionList);
         scrollPane.setPreferredSize(new Dimension(400, 300));
 
-        JPanel panel = FormBuilder.createFormBuilder()
+        FormBuilder formBuilder = FormBuilder.createFormBuilder()
                 .addLabeledComponent(
                         new JBLabel("Dependency:"),
                         new JBLabel(dependency.group() + ":" + dependency.artifact()), 1, false)
                 .addLabeledComponent(
                         new JBLabel("Current version:"),
-                        new JBLabel(dependency.currentVersion()), 1, false)
+                        new JBLabel(dependency.currentVersion()), 1, false);
+
+        if (vulnerabilityReport.status() == VulnerabilityStatus.VULNERABLE) {
+            formBuilder.addLabeledComponent(new JBLabel("Known vulnerabilities:"), buildVulnerabilityLinks(), 1, true);
+        }
+
+        JPanel panel = formBuilder
                 .addSeparator(10)
                 .addLabeledComponent(
                         new JBLabel("Available versions:"), scrollPane, 1, true)
@@ -89,6 +105,24 @@ public class VersionPickerDialog extends DialogWrapper {
         panel.setBorder(JBUI.Borders.empty(10));
 
         return panel;
+    }
+
+    /**
+     * Builds one clickable link per known vulnerability, opening its OSV.dev advisory page in
+     * the system browser when clicked.
+     */
+    @NotNull
+    private JComponent buildVulnerabilityLinks() {
+        JPanel linksPanel = new JPanel();
+        linksPanel.setLayout(new BoxLayout(linksPanel, BoxLayout.Y_AXIS));
+
+        for (Vulnerability vulnerability : vulnerabilityReport.vulnerabilities()) {
+            ActionLink link = new ActionLink(vulnerability.id(), (ActionListener) event -> BrowserUtil.browse(vulnerability.getUrl()));
+            link.setAlignmentX(Component.LEFT_ALIGNMENT);
+            linksPanel.add(link);
+        }
+
+        return linksPanel;
     }
 
     @NotNull
@@ -168,7 +202,8 @@ public class VersionPickerDialog extends DialogWrapper {
     }
 
     @Nullable
-    public static String pickVersion(@NotNull Project project, @NotNull Dependency dependency, @NotNull DependencyUpdateService service) {
+    public static String pickVersion(@NotNull Project project, @NotNull DependencyRow row, @NotNull DependencyUpdateService service) {
+        Dependency dependency = row.dependency();
         List<VersionCandidate> versions = service.getAllCandidatesFromCache(dependency);
 
         if (versions.isEmpty()) {
@@ -176,7 +211,7 @@ public class VersionPickerDialog extends DialogWrapper {
             return null;
         }
 
-        VersionPickerDialog dialog = new VersionPickerDialog(project, dependency, versions, service);
+        VersionPickerDialog dialog = new VersionPickerDialog(project, dependency, row.vulnerabilityReport(), versions, service);
         if (dialog.showAndGet()) {
             return dialog.getSelectedVersion();
         }

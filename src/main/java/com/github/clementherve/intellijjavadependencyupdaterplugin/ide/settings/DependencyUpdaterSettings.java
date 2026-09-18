@@ -112,6 +112,14 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
         state.showInlayHints = showInlayHints;
     }
 
+    public boolean isVulnerabilityScanningEnabled() {
+        return state.vulnerabilityScanningEnabled;
+    }
+
+    public void setVulnerabilityScanningEnabled(boolean vulnerabilityScanningEnabled) {
+        state.vulnerabilityScanningEnabled = vulnerabilityScanningEnabled;
+    }
+
     @NotNull
     public TriggerMode getTriggerMode() {
         return state.triggerMode;
@@ -168,6 +176,7 @@ public final class DependencyUpdaterSettings implements PersistentStateComponent
         public boolean showInlayHints = true;
         public TriggerMode triggerMode = TriggerMode.ON_OPEN;
         public String versionFilterRegex = "";
+        public boolean vulnerabilityScanningEnabled = true;
 
         // Default constructor for XML serialization
         public State() {

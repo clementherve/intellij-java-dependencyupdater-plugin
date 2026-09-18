@@ -151,7 +151,7 @@ public class DependencyOverviewPanel extends JPanel {
 
     private void pickAndApplyVersion(@NotNull DependencyRow row) {
         DependencyUpdateService service = DependencyUpdateService.getInstance(project);
-        String selectedVersion = VersionPickerDialog.pickVersion(project, row.dependency(), service);
+        String selectedVersion = VersionPickerDialog.pickVersion(project, row, service);
         if (selectedVersion != null) {
             DependencyVersionWriter.applyUpdate(project, row.dependency(), selectedVersion);
             PsiDocumentManager.getInstance(project).commitAllDocuments();

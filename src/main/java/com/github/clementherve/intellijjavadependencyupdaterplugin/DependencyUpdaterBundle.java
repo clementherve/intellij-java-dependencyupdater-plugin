@@ -10,7 +10,7 @@ public final class DependencyUpdaterBundle extends DynamicBundle {
     private static final DependencyUpdaterBundle INSTANCE = new DependencyUpdaterBundle();
 
     private DependencyUpdaterBundle() {
-        super(BUNDLE);
+        super(DependencyUpdaterBundle.class, BUNDLE);
     }
 
     @NotNull

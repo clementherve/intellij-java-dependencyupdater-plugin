@@ -4,6 +4,7 @@ import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpd
 import com.github.clementherve.intellijjavadependencyupdaterplugin.dependency.Dependency;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.version.VersionCandidate;
 import com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow.DependencyRow;
+import com.github.clementherve.intellijjavadependencyupdaterplugin.vulnerability.VulnerabilityReport;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +18,8 @@ import java.util.List;
  */
 public class DependencyTableModel extends AbstractTableModel {
 
-    private static final int COLUMN_COUNT = 6;
+    private static final int COLUMN_COUNT = 7;
+    static final int VULNERABILITY_COLUMN_INDEX = 6;
     private static final String NO_VALUE = "-";
 
     private final List<DependencyRow> rows = new ArrayList<>();
@@ -41,6 +43,7 @@ public class DependencyTableModel extends AbstractTableModel {
             case 3 -> DependencyUpdaterBundle.message("toolWindow.column.update");
             case 4 -> DependencyUpdaterBundle.message("toolWindow.column.type");
             case 5 -> DependencyUpdaterBundle.message("toolWindow.column.project");
+            case 6 -> DependencyUpdaterBundle.message("toolWindow.column.vulnerabilities");
             default -> "";
         };
     }
@@ -69,7 +72,20 @@ public class DependencyTableModel extends AbstractTableModel {
                     ? DependencyUpdaterBundle.message("toolWindow.type.plugin")
                     : DependencyUpdaterBundle.message("toolWindow.type.dependency");
             case 5 -> row.projectName();
+            case 6 -> vulnerabilityColumnText(row.vulnerabilityReport());
             default -> "";
+        };
+    }
+
+    @NotNull
+    private String vulnerabilityColumnText(@NotNull VulnerabilityReport report) {
+        return switch (report.status()) {
+            case NOT_CHECKED -> NO_VALUE;
+            case SAFE -> DependencyUpdaterBundle.message("toolWindow.vulnerability.safe");
+            case CHECK_FAILED -> DependencyUpdaterBundle.message("toolWindow.vulnerability.checkFailed");
+            case VULNERABLE -> report.vulnerabilities().size() == 1
+                    ? DependencyUpdaterBundle.message("toolWindow.vulnerability.foundSingle")
+                    : DependencyUpdaterBundle.message("toolWindow.vulnerability.foundPlural", report.vulnerabilities().size());
         };
     }
 
