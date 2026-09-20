@@ -46,7 +46,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v6
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: 21
 
       # Setup Gradle
@@ -63,6 +63,7 @@ jobs:
         with:
           name: plugin-distribution
           path: ./build/distributions/*.zip
+          retention-days: 1
 
   # Run tests and upload test reports on failure
   test:
@@ -106,6 +107,7 @@ jobs:
         with:
           name: tests-result
           path: ${{ github.workspace }}/build/reports/tests
+          retention-days: 1
 
   # Run plugin structure verification along with IntelliJ Plugin Verifier
   verify:
@@ -149,6 +151,7 @@ jobs:
         with:
           name: pluginVerifier-result
           path: ${{ github.workspace }}/build/reports/pluginVerifier
+          retention-days: 1
 
   # Publish a pre-release GitHub Release with the plugin ZIP attached, for dev tag pushes only
   publishDevRelease:
