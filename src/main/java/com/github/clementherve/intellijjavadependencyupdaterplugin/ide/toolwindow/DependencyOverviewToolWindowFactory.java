@@ -1,5 +1,6 @@
 package com.github.clementherve.intellijjavadependencyupdaterplugin.ide.toolwindow;
 
+import com.github.clementherve.intellijjavadependencyupdaterplugin.DependencyUpdaterBundle;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
@@ -15,9 +16,14 @@ public class DependencyOverviewToolWindowFactory implements ToolWindowFactory, D
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
-        DependencyOverviewPanel panel = new DependencyOverviewPanel(project);
         ContentFactory contentFactory = ContentFactory.getInstance();
-        Content content = contentFactory.createContent(panel, "", false);
-        toolWindow.getContentManager().addContent(content);
+
+        DependencyOverviewPanel dependenciesPanel = new DependencyOverviewPanel(project);
+        Content dependenciesContent = contentFactory.createContent(dependenciesPanel, DependencyUpdaterBundle.message("toolWindow.tab.dependencies"), false);
+        toolWindow.getContentManager().addContent(dependenciesContent);
+
+        GradleWrapperPanel gradleWrapperPanel = new GradleWrapperPanel(project);
+        Content gradleWrapperContent = contentFactory.createContent(gradleWrapperPanel, DependencyUpdaterBundle.message("toolWindow.tab.gradleWrapper"), false);
+        toolWindow.getContentManager().addContent(gradleWrapperContent);
     }
 }
